@@ -82,7 +82,7 @@ const EditProfileScreen = ({ isDarkMode, onBack, onSave, initialName, initialEma
   );
 };
 
-const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDisplayName, onEditPress, onToggleDarkMode }) => {
+const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDisplayName, onEditPress, onToggleDarkMode, currentLanguage, onChangeLanguage }) => {
   const [currentScreen, setCurrentScreen] = useState('account'); // account, settings, privacy, notifications, linked-banks, support
   const [notificationSettings, setNotificationSettings] = useState({
     transactionAlerts: false,
@@ -95,6 +95,10 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
   const mutedColor = isDarkMode ? '#aeb4c1' : '#6b7280';
   const surface = isDarkMode ? '#111827' : '#ffffff';
   const cardBg = isDarkMode ? '#1f2937' : '#f4f6f9';
+  const [languageDraft, setLanguageDraft] = useState(currentLanguage || 'en');
+  const [accessibility, setAccessibility] = useState({ largerText: false, reduceMotion: false, highContrast: false });
+  const [privacy, setPrivacy] = useState({ oldPassword: '', newPassword: '', confirmPassword: '', twoFactor: false, biometric: false, question1: '', answer1: '', recoveryEmail: '' });
+  const [savedFlag, setSavedFlag] = useState('');
 
   // Handle Android back button
   useEffect(() => {
@@ -192,12 +196,47 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
     </ScrollView>
   );
 
+  const renderLanguageScreen = () => {
+    const languages = [
+      { code: 'en', label: 'English' },
+      { code: 'hi', label: 'हिंदी' },
+      { code: 'ta', label: 'தமிழ்' },
+      { code: 'te', label: 'తెలుగు' },
+    ];
+    return (
+      <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+        {languages.map((lng) => (
+          <TouchableOpacity
+            key={lng.code}
+            style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed', justifyContent: 'space-between' }]}
+            onPress={() => setLanguageDraft(lng.code)}
+          >
+            <View style={styles.menuItemLeft}>
+              <Text style={styles.menuItemIcon}>🌐</Text>
+              <Text style={[styles.menuItemText, { color: textColor }]}>{lng.label}</Text>
+            </View>
+            <Text style={[styles.menuItemArrow, { color: languageDraft === lng.code ? '#3b82f6' : mutedColor }]}>{languageDraft === lng.code ? '●' : '○'}</Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => {
+            onChangeLanguage && onChangeLanguage(languageDraft);
+            setCurrentScreen('settings');
+          }}
+        >
+          <Text style={styles.logoutButtonText}>Save</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
+
   const renderSettingsScreen = () => (
     <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
       {[
         { icon: '☀️', title: 'Display', action: () => setCurrentScreen('display') },
-        { icon: '🌐', title: 'Language' },
-        { icon: '👤', title: 'Accessibility' },
+        { icon: '🌐', title: 'Language', action: () => setCurrentScreen('language') },
+        { icon: '👤', title: 'Accessibility', action: () => setCurrentScreen('accessibility') },
         { icon: '🔔', title: 'Notifications', action: () => setCurrentScreen('notifications') },
       ].map((item) => (
         <TouchableOpacity 
@@ -232,20 +271,49 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
     </ScrollView>
   );
 
+  const renderAccessibilityScreen = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      {[{ key: 'largerText', icon: '🔤', title: 'Larger Text' }, { key: 'reduceMotion', icon: '🎞️', title: 'Reduce Motion' }, { key: 'highContrast', icon: '🎯', title: 'High Contrast' }].map((item) => (
+        <View key={item.key} style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+          <View style={styles.menuItemLeft}>
+            <Text style={styles.menuItemIcon}>{item.icon}</Text>
+            <Text style={[styles.menuItemText, { color: textColor }]}>{item.title}</Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.toggleSwitch, accessibility[item.key] && styles.toggleSwitchOn]} 
+            onPress={() => setAccessibility((p) => ({ ...p, [item.key]: !p[item.key] }))}
+          >
+            <View style={[styles.toggleKnob, accessibility[item.key] && styles.toggleKnobOn]} />
+          </TouchableOpacity>
+        </View>
+      ))}
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          setSavedFlag('access');
+          setTimeout(() => setSavedFlag(''), 1200);
+        }}
+      >
+        <Text style={styles.logoutButtonText}>{savedFlag === 'access' ? 'Saved' : 'Save'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
   const renderPrivacyScreen = () => (
     <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
       {[
-        { icon: '🔒', title: 'Change Password' },
-        { icon: '🛡️', title: 'Two-Factor Authentication' },
-        { icon: '👆', title: 'Biometric Login' },
-        { icon: '❓', title: 'Security Questions' },
-        { icon: '🔑', title: 'Account Recovery' },
-        { icon: '📄', title: 'Privacy Policy' },
-        { icon: '📄', title: 'Terms of Service' },
-      ].map((item, index) => (
+        { icon: '🔒', title: 'Change Password', action: () => setCurrentScreen('privacy-change-password') },
+        { icon: '🛡️', title: 'Two-Factor Authentication', action: () => setCurrentScreen('privacy-two-factor') },
+        { icon: '👆', title: 'Biometric Login', action: () => setCurrentScreen('privacy-biometric') },
+        { icon: '❓', title: 'Security Questions', action: () => setCurrentScreen('privacy-security-questions') },
+        { icon: '🔑', title: 'Account Recovery', action: () => setCurrentScreen('privacy-account-recovery') },
+        { icon: '📄', title: 'Privacy Policy', action: () => setCurrentScreen('privacy-policy') },
+        { icon: '📄', title: 'Terms of Service', action: () => setCurrentScreen('privacy-terms') },
+      ].map((item) => (
         <TouchableOpacity 
           key={item.title}
           style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}
+          onPress={item.action}
         >
           <View style={styles.menuItemLeft}>
             <Text style={styles.menuItemIcon}>{item.icon}</Text>
@@ -254,6 +322,129 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
           <Text style={[styles.menuItemArrow, { color: mutedColor }]}>›</Text>
         </TouchableOpacity>
       ))}
+    </ScrollView>
+  );
+
+  const renderPrivacyChangePassword = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Change Password</Text>
+          <TextInput value={privacy.oldPassword} onChangeText={(t) => setPrivacy((p) => ({ ...p, oldPassword: t }))} placeholder="Current password" placeholderTextColor={mutedColor} secureTextEntry style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+          <TextInput value={privacy.newPassword} onChangeText={(t) => setPrivacy((p) => ({ ...p, newPassword: t }))} placeholder="New password" placeholderTextColor={mutedColor} secureTextEntry style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+          <TextInput value={privacy.confirmPassword} onChangeText={(t) => setPrivacy((p) => ({ ...p, confirmPassword: t }))} placeholder="Confirm new password" placeholderTextColor={mutedColor} secureTextEntry style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          const ok = privacy.newPassword && privacy.newPassword.length >= 6 && privacy.newPassword === privacy.confirmPassword;
+          if (ok) {
+            setPrivacy((p) => ({ ...p, oldPassword: '', newPassword: '', confirmPassword: '' }));
+            setSavedFlag('pwd');
+            setTimeout(() => setSavedFlag(''), 1200);
+          }
+        }}
+      >
+        <Text style={styles.logoutButtonText}>{savedFlag === 'pwd' ? 'Saved' : 'Save Password'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  const renderPrivacyTwoFactor = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={styles.menuItemLeft}>
+          <Text style={styles.menuItemIcon}>🛡️</Text>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Two-Factor Authentication</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.toggleSwitch, privacy.twoFactor && styles.toggleSwitchOn]} 
+          onPress={() => setPrivacy((p) => ({ ...p, twoFactor: !p.twoFactor }))}
+        >
+          <View style={[styles.toggleKnob, privacy.twoFactor && styles.toggleKnobOn]} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+
+  const renderPrivacyBiometric = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={styles.menuItemLeft}>
+          <Text style={styles.menuItemIcon}>👆</Text>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Biometric Login</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.toggleSwitch, privacy.biometric && styles.toggleSwitchOn]} 
+          onPress={() => setPrivacy((p) => ({ ...p, biometric: !p.biometric }))}
+        >
+          <View style={[styles.toggleKnob, privacy.biometric && styles.toggleKnobOn]} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+
+  const renderPrivacySecurityQuestions = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Security Question</Text>
+          <TextInput value={privacy.question1} onChangeText={(t) => setPrivacy((p) => ({ ...p, question1: t }))} placeholder="Question" placeholderTextColor={mutedColor} style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+          <TextInput value={privacy.answer1} onChangeText={(t) => setPrivacy((p) => ({ ...p, answer1: t }))} placeholder="Answer" placeholderTextColor={mutedColor} style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          setSavedFlag('sq');
+          setTimeout(() => setSavedFlag(''), 1200);
+        }}
+      >
+        <Text style={styles.logoutButtonText}>{savedFlag === 'sq' ? 'Saved' : 'Save'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  const renderPrivacyAccountRecovery = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Account Recovery</Text>
+          <TextInput value={privacy.recoveryEmail} onChangeText={(t) => setPrivacy((p) => ({ ...p, recoveryEmail: t }))} placeholder="Recovery email" placeholderTextColor={mutedColor} keyboardType="email-address" autoCapitalize="none" style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]} />
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          setSavedFlag('ar');
+          setTimeout(() => setSavedFlag(''), 1200);
+        }}
+      >
+        <Text style={styles.logoutButtonText}>{savedFlag === 'ar' ? 'Saved' : 'Save'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  const renderPrivacyPolicy = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Privacy Policy</Text>
+          <Text style={{ color: mutedColor, marginTop: 6 }}>Our privacy practices and how we handle your data.</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderPrivacyTerms = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Terms of Service</Text>
+          <Text style={{ color: mutedColor, marginTop: 6 }}>Terms and conditions of using the app.</Text>
+        </View>
+      </View>
     </ScrollView>
   );
 
@@ -389,7 +580,16 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
       case 'account': return 'Account';
       case 'settings': return 'Settings';
       case 'display': return 'Display';
+      case 'language': return 'Language';
+      case 'accessibility': return 'Accessibility';
       case 'privacy': return 'Privacy & Security';
+      case 'privacy-change-password': return 'Change Password';
+      case 'privacy-two-factor': return 'Two-Factor Authentication';
+      case 'privacy-biometric': return 'Biometric Login';
+      case 'privacy-security-questions': return 'Security Questions';
+      case 'privacy-account-recovery': return 'Account Recovery';
+      case 'privacy-policy': return 'Privacy Policy';
+      case 'privacy-terms': return 'Terms of Service';
       case 'notifications': return 'Notification';
       case 'linked-banks': return 'Linked Banks';
       case 'support': return 'Support';
@@ -402,7 +602,16 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
       case 'account': return renderAccountScreen();
       case 'settings': return renderSettingsScreen();
       case 'display': return renderDisplayScreen();
+      case 'language': return renderLanguageScreen();
+      case 'accessibility': return renderAccessibilityScreen();
       case 'privacy': return renderPrivacyScreen();
+      case 'privacy-change-password': return renderPrivacyChangePassword();
+      case 'privacy-two-factor': return renderPrivacyTwoFactor();
+      case 'privacy-biometric': return renderPrivacyBiometric();
+      case 'privacy-security-questions': return renderPrivacySecurityQuestions();
+      case 'privacy-account-recovery': return renderPrivacyAccountRecovery();
+      case 'privacy-policy': return renderPrivacyPolicy();
+      case 'privacy-terms': return renderPrivacyTerms();
       case 'notifications': return renderNotificationsScreen();
       case 'linked-banks': return renderLinkedBanksScreen();
       case 'support': return renderSupportScreen();
@@ -435,7 +644,7 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
 };
 
 // Homepage Component
-const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout, displayName, profileEmail, onEditProfile, onOpenProfile, showEditProfile, onOpenEditProfile, onCloseEditProfile, onSaveProfile }) => {
+const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout, displayName, profileEmail, onEditProfile, onOpenProfile, showEditProfile, onOpenEditProfile, onCloseEditProfile, onSaveProfile, currentLanguage, onChangeLanguage }) => {
   if (showGuide) {
     return <QuickStartGuide onComplete={onGuideComplete} isDarkMode={isDarkMode} />;
   }
@@ -449,6 +658,19 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   const [bottomActive, setBottomActive] = useState(0); // 0 Home, 1 Portfolio, 2 Payments
   const [showMoneyTransactionPage, setShowMoneyTransactionPage] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showPayContactPage, setShowPayContactPage] = useState(false);
+  const [contacts] = useState([
+    { name: 'Ashish', avatar: '👤', color: '#32CD32' },
+    { name: 'Abi', avatar: '👤', color: '#FFD700' },
+    { name: 'Aditi', avatar: '👤', color: '#7c4dff' },
+    { name: 'Rohan', avatar: '👤', color: '#ef4444' },
+    { name: 'Neha', avatar: '👤', color: '#16a34a' },
+  ]);
+  const [searchContact, setSearchContact] = useState('');
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [paySuccess, setPaySuccess] = useState(false);
 
   // Handle Android back button for HomePage
   useEffect(() => {
@@ -467,7 +689,26 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [showMoneyTransactionPage, showProfile]);
+  }, [showMoneyTransactionPage, showProfile, showPayContactPage]);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showPayContactPage) {
+        setShowPayContactPage(false);
+        return true;
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [showPayContactPage]);
+
+  const welcomeWord = (
+    currentLanguage === 'hi' ? 'स्वागत है' :
+    currentLanguage === 'ta' ? 'வரவேற்கிறோம்' :
+    currentLanguage === 'te' ? 'స్వాగతం' :
+    'Welcome'
+  );
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -494,7 +735,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
               <Image source={require('./assets/icon.png')} style={styles.avatar} />
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={[styles.welcomeTiny, { color: mutedColor }]}>Welcome {displayName || 'User'}</Text>
+              <Text style={[styles.welcomeTiny, { color: mutedColor }]}>{welcomeWord} {displayName || 'User'}</Text>
               <Text style={[styles.userName, { color: textColor }]}>{displayName || 'User'}</Text>
               <Text style={[styles.portfolioTiny, { color: mutedColor }]}>Portfolio Value</Text>
               <Text style={[styles.portfolioValue, { color: textColor }]}>$17,457.00</Text>
@@ -519,6 +760,95 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+      )}
+
+      {showPayContactPage && (
+        <View style={[styles.moneyTransactionPage, { backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff' }]}>
+          <View style={[styles.moneyTransactionHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+            <TouchableOpacity onPress={() => setShowPayContactPage(false)}>
+              <Text style={[styles.backButton, { color: '#3b82f6' }]}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={[styles.moneyTransactionPageTitle, { color: textColor }]}>Pay Contact</Text>
+            <View style={{ width: 50 }} />
+          </View>
+
+          <ScrollView style={styles.moneyTransactionContent} contentContainerStyle={{ paddingBottom: 100 }}>
+            <View style={[styles.searchWrap, { backgroundColor: cardBg, marginTop: 12 }]}> 
+              <Text style={styles.searchIcon}>🔎</Text>
+              <TextInput 
+                value={searchContact}
+                onChangeText={setSearchContact}
+                placeholder="Search contacts"
+                placeholderTextColor={mutedColor}
+                style={[styles.searchInput, { color: textColor }]}
+              />
+            </View>
+
+            <View style={{ marginTop: 10 }}>
+              {(contacts || [])
+                .filter(c => !searchContact || c.name.toLowerCase().includes(searchContact.toLowerCase()))
+                .map((c) => (
+                  <TouchableOpacity
+                    key={c.name}
+                    style={[styles.transactionRow, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#eef0f4' }]}
+                    onPress={() => setSelectedContact(c)}
+                  >
+                    <View style={[styles.transactionAvatar, { backgroundColor: c.color }]}>
+                      <Text style={styles.transactionAvatarText}>{c.avatar}</Text>
+                    </View>
+                    <View style={styles.transactionDetails}>
+                      <Text style={[styles.transactionName, { color: textColor }]}>{c.name}</Text>
+                      <Text style={[styles.transactionTime, { color: mutedColor }]}>{selectedContact?.name === c.name ? 'Selected' : 'Tap to select'}</Text>
+                    </View>
+                    <Text style={[styles.transactionAmount, { color: selectedContact?.name === c.name ? '#3b82f6' : mutedColor }]}>{selectedContact?.name === c.name ? '✓' : ''}</Text>
+                  </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed', marginTop: 10 }]}> 
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuItemText, { color: textColor }]}>Amount</Text>
+                <TextInput
+                  value={payAmount}
+                  onChangeText={setPayAmount}
+                  placeholder="$0.00"
+                  placeholderTextColor={mutedColor}
+                  keyboardType="numeric"
+                  style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]}
+                />
+              </View>
+            </View>
+            <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuItemText, { color: textColor }]}>Note (optional)</Text>
+                <TextInput
+                  value={payNote}
+                  onChangeText={setPayNote}
+                  placeholder="What is this for?"
+                  placeholderTextColor={mutedColor}
+                  style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0, marginTop: 6 }]}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.logoutButton, { opacity: selectedContact && payAmount ? 1 : 0.6 }]}
+              disabled={!selectedContact || !payAmount}
+              onPress={() => {
+                setPaySuccess(true);
+                setTimeout(() => {
+                  setPaySuccess(false);
+                  setShowPayContactPage(false);
+                  setSelectedContact(null);
+                  setPayAmount('');
+                  setPayNote('');
+                }, 1200);
+              }}
+            >
+              <Text style={styles.logoutButtonText}>{paySuccess ? 'Sent' : 'Send'}</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       )}
 
@@ -957,7 +1287,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
                   </View>
                   <Text style={[styles.transactionLabel, { color: textColor }]}>Scan any QR code</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.transactionOption}>
+                <TouchableOpacity style={styles.transactionOption} onPress={() => setShowPayContactPage(true)}>
                   <View style={[styles.transactionIcon, { backgroundColor: cardBg }]}>
                     <Text style={styles.transactionIconText}>👤</Text>
                   </View>
@@ -1013,7 +1343,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
 
         {/* Money Transaction Page */}
         {showMoneyTransactionPage && (
-          <View style={[styles.moneyTransactionPage, { backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff' }]}>
+        <View style={[styles.moneyTransactionPage, { backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff' }]}>
             {/* Header */}
             <View style={[styles.moneyTransactionHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}>
               <TouchableOpacity onPress={() => setShowMoneyTransactionPage(false)}>
@@ -1208,6 +1538,8 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
           }}
           onEditPress={onOpenEditProfile}
           onToggleDarkMode={onToggleDarkMode}
+          currentLanguage={currentLanguage}
+          onChangeLanguage={onChangeLanguage}
         />
       )}
       {showProfile && showEditProfile && (
@@ -1233,6 +1565,7 @@ export default function App() {
   const [showKYCVerification, setShowKYCVerification] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
   const [authToken, setAuthToken] = useState(null);
   const [displayName, setDisplayName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
@@ -1366,6 +1699,10 @@ export default function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  const handleChangeLanguage = (code) => {
+    setCurrentLanguage(code || 'en');
+  };
+
   const handleLogout = () => {
     // Reset to login screen
     setIsLoggedIn(false);
@@ -1448,6 +1785,8 @@ export default function App() {
           onOpenEditProfile={() => setShowEditProfile(true)}
           onCloseEditProfile={() => setShowEditProfile(false)}
           onSaveProfile={saveProfile}
+          currentLanguage={currentLanguage}
+          onChangeLanguage={handleChangeLanguage}
         />
       )}
     </>
