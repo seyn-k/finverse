@@ -7,19 +7,6 @@ import {
   Dimensions 
 } from 'react-native';
 
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
 const QuickStartGuide = ({ onComplete, isDarkMode, onToggleDarkMode }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -112,7 +99,6 @@ const QuickStartGuide = ({ onComplete, isDarkMode, onToggleDarkMode }) => {
 
   return (
     <View style={[styles.guideContainer, isDarkMode && styles.guideContainerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
       <View 
         style={styles.slideContainer}
         onTouchStart={handleTouchStart}

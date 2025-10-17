@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler } from 'react-native';
+import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
+import Constants from 'expo-constants';
 import LoginPage from './Login';
 import QuickStartGuide from './Guide';
 import PanCardDetails from './PanCardDetails';
@@ -8,20 +9,6 @@ import AadharCardDetails from './AadharCardDetails';
 import BankVerification from './BankVerification';
 import KYCVerification from './KYCVerification';
 import { styles } from './styles';
-
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
 // Loading Screen Component
 const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
@@ -45,7 +32,6 @@ const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
 
   return (
     <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={() => {}} />
       <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
         <Image 
           source={require('./assets/icon.png')} 
@@ -60,7 +46,43 @@ const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
 
 
 // Profile Screen Component
-const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
+const EditProfileScreen = ({ isDarkMode, onBack, onSave, initialName, initialEmail }) => {
+  const textColor = isDarkMode ? '#fff' : '#0b1220';
+  const mutedColor = isDarkMode ? '#aeb4c1' : '#6b7280';
+  const surface = isDarkMode ? '#111827' : '#ffffff';
+  const [name, setName] = useState(initialName || '');
+  const [email, setEmail] = useState(initialEmail || '');
+  return (
+    <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
+      <View style={[styles.profileHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={styles.profileHeaderRow}>
+          <TouchableOpacity onPress={onBack}><Text style={[styles.backButton, { color: '#3b82f6' }]}>←</Text></TouchableOpacity>
+          <Text style={[styles.profileHeaderTitle, { color: textColor }]}>Edit Profile</Text>
+          <View style={{ width: 24 }} />
+        </View>
+      </View>
+      <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.menuItemText, { color: mutedColor, marginBottom: 6 }]}>Display name</Text>
+            <TextInput value={name} onChangeText={setName} placeholder="Enter name" placeholderTextColor={mutedColor} style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
+          </View>
+        </View>
+        <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.menuItemText, { color: mutedColor, marginBottom: 6 }]}>Email</Text>
+            <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Enter email" placeholderTextColor={mutedColor} style={[styles.searchInput, { color: textColor, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
+          </View>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => onSave && onSave({ name: name.trim(), email: email.trim().toLowerCase() })}>
+          <Text style={styles.logoutButtonText}>Save</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+};
+
+const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDisplayName, onEditPress, onToggleDarkMode }) => {
   const [currentScreen, setCurrentScreen] = useState('account'); // account, settings, privacy, notifications, linked-banks, support
   const [notificationSettings, setNotificationSettings] = useState({
     transactionAlerts: false,
@@ -98,6 +120,18 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
     }));
   };
 
+  const [nameDraft, setNameDraft] = useState(displayName || '');
+
+  useEffect(() => {
+    setNameDraft(displayName || '');
+  }, [displayName]);
+
+  const handleSave = () => {
+    const trimmed = (nameDraft || '').trim();
+    if (!trimmed) return;
+    onSaveDisplayName && onSaveDisplayName(trimmed);
+  };
+
   const renderAccountScreen = () => (
     <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
       {/* Profile Section */}
@@ -105,8 +139,8 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
         <View style={styles.profileImageContainer}>
           <Image source={require('./assets/icon.png')} style={styles.profileImage} />
         </View>
-        <Text style={[styles.profileName, { color: textColor }]}>Harish</Text>
-        <TouchableOpacity style={styles.editProfileBtn}>
+        <Text style={[styles.profileName, { color: textColor }]}>{displayName || 'User'}</Text>
+        <TouchableOpacity style={styles.editProfileBtn} onPress={onEditPress}>
           <Text style={styles.editProfileText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
@@ -161,14 +195,15 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
   const renderSettingsScreen = () => (
     <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
       {[
-        { icon: '☀️', title: 'Display' },
+        { icon: '☀️', title: 'Display', action: () => setCurrentScreen('display') },
         { icon: '🌐', title: 'Language' },
         { icon: '👤', title: 'Accessibility' },
-        { icon: '🔔', title: 'Notifications' },
-      ].map((item, index) => (
+        { icon: '🔔', title: 'Notifications', action: () => setCurrentScreen('notifications') },
+      ].map((item) => (
         <TouchableOpacity 
           key={item.title}
           style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}
+          onPress={item.action}
         >
           <View style={styles.menuItemLeft}>
             <Text style={styles.menuItemIcon}>{item.icon}</Text>
@@ -177,6 +212,23 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
           <Text style={[styles.menuItemArrow, { color: mutedColor }]}>›</Text>
         </TouchableOpacity>
       ))}
+    </ScrollView>
+  );
+
+  const renderDisplayScreen = () => (
+    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
+      <View style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}> 
+        <View style={styles.menuItemLeft}>
+          <Text style={styles.menuItemIcon}>🌙</Text>
+          <Text style={[styles.menuItemText, { color: textColor }]}>Dark Mode</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.toggleSwitch, isDarkMode && styles.toggleSwitchOn]} 
+          onPress={onToggleDarkMode}
+        >
+          <View style={[styles.toggleKnob, isDarkMode && styles.toggleKnobOn]} />
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 
@@ -336,6 +388,7 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
     switch (currentScreen) {
       case 'account': return 'Account';
       case 'settings': return 'Settings';
+      case 'display': return 'Display';
       case 'privacy': return 'Privacy & Security';
       case 'notifications': return 'Notification';
       case 'linked-banks': return 'Linked Banks';
@@ -348,6 +401,7 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
     switch (currentScreen) {
       case 'account': return renderAccountScreen();
       case 'settings': return renderSettingsScreen();
+      case 'display': return renderDisplayScreen();
       case 'privacy': return renderPrivacyScreen();
       case 'notifications': return renderNotificationsScreen();
       case 'linked-banks': return renderLinkedBanksScreen();
@@ -381,7 +435,7 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout }) => {
 };
 
 // Homepage Component
-const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout }) => {
+const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout, displayName, profileEmail, onEditProfile, onOpenProfile, showEditProfile, onOpenEditProfile, onCloseEditProfile, onSaveProfile }) => {
   if (showGuide) {
     return <QuickStartGuide onComplete={onGuideComplete} isDarkMode={isDarkMode} />;
   }
@@ -440,8 +494,8 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
               <Image source={require('./assets/icon.png')} style={styles.avatar} />
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={[styles.welcomeTiny, { color: mutedColor }]}>Welcome Harish</Text>
-              <Text style={[styles.userName, { color: textColor }]}>Harish</Text>
+              <Text style={[styles.welcomeTiny, { color: mutedColor }]}>Welcome {displayName || 'User'}</Text>
+              <Text style={[styles.userName, { color: textColor }]}>{displayName || 'User'}</Text>
               <Text style={[styles.portfolioTiny, { color: mutedColor }]}>Portfolio Value</Text>
               <Text style={[styles.portfolioValue, { color: textColor }]}>$17,457.00</Text>
             </View>
@@ -464,7 +518,6 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
                 <Text style={[activeSegment === idx ? styles.segmentActiveText : styles.segmentText, activeSegment !== idx && { color: textColor } ]}>{label}</Text>
               </TouchableOpacity>
             ))}
-            <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
           </View>
         </View>
       )}
@@ -876,7 +929,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
                     <Image source={require('./assets/icon.png')} style={styles.balanceProfileImage} />
                   </View>
                   <View style={styles.balanceTextSection}>
-                    <Text style={styles.balanceUserName}>Harish</Text>
+                    <Text style={styles.balanceUserName}>{displayName || 'User'}</Text>
                     <Text style={styles.balanceLabel}>Balance</Text>
                     <Text style={styles.balanceAmount}>$17,457.00</Text>
                   </View>
@@ -973,7 +1026,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
             <ScrollView style={styles.moneyTransactionContent} contentContainerStyle={{ paddingBottom: 100 }}>
               {/* Welcome */}
               <View style={styles.welcomeSection}>
-                <Text style={[styles.welcomeTitle, { color: textColor }]}>Welcome, Harish</Text>
+                <Text style={[styles.welcomeTitle, { color: textColor }]}>Welcome, {displayName || 'User'}</Text>
               </View>
 
               {/* Balance Card */}
@@ -984,7 +1037,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
                 </View>
                 <Text style={styles.cardNumber}>4321 •••• •••• 5678</Text>
                 <View style={styles.balanceCardBottom}>
-                  <Text style={styles.cardHolder}>Harishraj Rajkumar</Text>
+                  <Text style={styles.cardHolder}>{displayName || 'User'}</Text>
                   <Text style={styles.expiry}>09/29</Text>
                 </View>
               </View>
@@ -1144,11 +1197,26 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
       </View>
 
       {/* Profile Screen Overlay */}
-      {showProfile && (
+      {showProfile && !showEditProfile && (
         <ProfileScreen 
           isDarkMode={isDarkMode} 
           onBack={() => setShowProfile(false)} 
           onLogout={onLogout}
+          displayName={displayName}
+          onSaveDisplayName={(name) => {
+            onEditProfile && onEditProfile(name);
+          }}
+          onEditPress={onOpenEditProfile}
+          onToggleDarkMode={onToggleDarkMode}
+        />
+      )}
+      {showProfile && showEditProfile && (
+        <EditProfileScreen
+          isDarkMode={isDarkMode}
+          onBack={onCloseEditProfile}
+          onSave={onSaveProfile}
+          initialName={displayName}
+          initialEmail={profileEmail}
         />
       )}
     </View>
@@ -1165,6 +1233,51 @@ export default function App() {
   const [showKYCVerification, setShowKYCVerification] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [authToken, setAuthToken] = useState(null);
+  const [displayName, setDisplayName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const saveDisplayName = async (name) => {
+    try {
+      if (!authToken) return;
+      const res = await fetch(`${BASE_URL}/profile/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ displayName: name }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.displayName) setDisplayName(data.displayName);
+    } catch (_) {}
+  };
+
+  const resolvedHost = (
+    (Constants?.expoConfig?.hostUri || Constants?.manifest?.debuggerHost || '')
+      .toString()
+      .split(':')[0]
+  );
+  const isLocalHost = resolvedHost === 'localhost' || resolvedHost === '127.0.0.1';
+  const BASE_URL = Platform.OS === 'android'
+    ? (!isLocalHost && resolvedHost ? `http://${resolvedHost}:4000` : 'http://10.0.2.2:4000')
+    : (resolvedHost ? `http://${resolvedHost}:4000` : 'http://localhost:4000');
+
+  const advanceStep = async (toStep) => {
+    if (!authToken) return;
+    try {
+      await fetch(`${BASE_URL}/verification/advance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ to: toStep }),
+      });
+    } catch (_) {
+      // ignore for now; UX remains optimistic
+    }
+  };
 
   const handleLoadingComplete = () => {
     setIsLoading(false);
@@ -1175,34 +1288,78 @@ export default function App() {
     setShowLogin(true);
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (authData) => {
+    // authData: { token, user: { id, email, verificationStep } }
+    const step = authData?.user?.verificationStep || 'pan';
+    const token = authData?.token || null;
+    setAuthToken(token);
     setShowLogin(false);
-    setIsLoggedIn(true);
+    // fetch profile to get PAN name for display
+    if (token) {
+      fetch(`${BASE_URL}/verification/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((me) => {
+          if (me?.pan?.name) setDisplayName(me.pan.name);
+          if (me?.email) setProfileEmail(me.email);
+        })
+        .catch(() => {});
+    }
+    if (step === 'pan') {
+      setShowPanCard(true);
+    } else if (step === 'aadhar') {
+      setShowAadharCard(true);
+    } else if (step === 'bank') {
+      setShowBankVerification(true);
+    } else if (step === 'kyc') {
+      setShowKYCVerification(true);
+    } else {
+      setIsLoggedIn(true);
+    }
   };
 
-  const handleSignupSuccess = () => {
+  const handleSignupSuccess = (authData) => {
+    const token = authData?.token || null;
+    setAuthToken(token);
     setShowLogin(false);
     setShowPanCard(true);
   };
 
   const handlePanComplete = () => {
+    advanceStep('aadhar');
     setShowPanCard(false);
     setShowAadharCard(true);
   };
 
   const handleAadharComplete = () => {
+    advanceStep('bank');
     setShowAadharCard(false);
     setShowBankVerification(true);
   };
 
   const handleBankComplete = () => {
+    advanceStep('kyc');
     setShowBankVerification(false);
     setShowKYCVerification(true);
   };
 
   const handleKYCComplete = () => {
+    advanceStep('done');
     setShowKYCVerification(false);
     setIsLoggedIn(true);
+    // Refresh profile to capture latest PAN name
+    if (authToken) {
+      fetch(`${BASE_URL}/verification/me`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+        .then((r) => r.json())
+        .then((me) => {
+          if (me?.pan?.name) setDisplayName(me.pan.name);
+          if (me?.email) setProfileEmail(me.email);
+        })
+        .catch(() => {});
+    }
   };
 
   const toggleDarkMode = () => {
@@ -1218,6 +1375,42 @@ export default function App() {
     setShowAadharCard(false);
     setShowBankVerification(false);
     setShowKYCVerification(false);
+    setAuthToken(null);
+    setDisplayName('');
+    setProfileEmail('');
+    setShowEditProfile(false);
+  };
+
+  // Ensure display name is loaded when entering home if missing
+  useEffect(() => {
+    if (isLoggedIn && authToken && !displayName) {
+      fetch(`${BASE_URL}/verification/me`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+        .then((r) => r.json())
+        .then((me) => {
+          if (me?.pan?.name) setDisplayName(me.pan.name);
+          if (me?.email) setProfileEmail(me.email);
+        })
+        .catch(() => {});
+    }
+  }, [isLoggedIn, authToken, displayName]);
+
+  const saveProfile = async ({ name, email }) => {
+    try {
+      if (!authToken) return;
+      const res = await fetch(`${BASE_URL}/profile/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ displayName: name, email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data?.displayName) setDisplayName(data.displayName);
+        if (data?.email) setProfileEmail(data.email);
+        setShowEditProfile(false);
+      }
+    } catch (_) {}
   };
 
   return (
@@ -1234,13 +1427,13 @@ export default function App() {
           onToggleDarkMode={toggleDarkMode} 
         />
       ) : showPanCard ? (
-        <PanCardDetails onPanComplete={handlePanComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <PanCardDetails onPanComplete={handlePanComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} baseUrl={BASE_URL} authToken={authToken} setDisplayName={setDisplayName} />
       ) : showAadharCard ? (
-        <AadharCardDetails onAadharComplete={handleAadharComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <AadharCardDetails onAadharComplete={handleAadharComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} baseUrl={BASE_URL} authToken={authToken} />
       ) : showBankVerification ? (
-        <BankVerification onBankComplete={handleBankComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <BankVerification onBankComplete={handleBankComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} baseUrl={BASE_URL} authToken={authToken} />
       ) : showKYCVerification ? (
-        <KYCVerification onKYCComplete={handleKYCComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <KYCVerification onKYCComplete={handleKYCComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} baseUrl={BASE_URL} authToken={authToken} />
       ) : (
         <HomePage 
           showGuide={showGuide} 
@@ -1248,6 +1441,13 @@ export default function App() {
           isDarkMode={isDarkMode} 
           onToggleDarkMode={toggleDarkMode} 
           onLogout={handleLogout}
+          displayName={displayName}
+          profileEmail={profileEmail}
+          onEditProfile={saveDisplayName}
+          showEditProfile={showEditProfile}
+          onOpenEditProfile={() => setShowEditProfile(true)}
+          onCloseEditProfile={() => setShowEditProfile(false)}
+          onSaveProfile={saveProfile}
         />
       )}
     </>

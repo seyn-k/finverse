@@ -10,21 +10,8 @@ import {
   ScrollView 
 } from 'react-native';
 
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
-const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode }) => {
+const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
   const [aadharBox1, setAadharBox1] = useState('');
   const [aadharBox2, setAadharBox2] = useState('');
   const [aadharBox3, setAadharBox3] = useState('');
@@ -41,7 +28,7 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode }) =
     return aadharRegex.test(aadhar);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const fullAadharNumber = aadharBox1 + aadharBox2 + aadharBox3;
     
     if (!aadharBox1 || !aadharBox2 || !aadharBox3 || !fullName || !fatherName || !motherName || !dateOfBirth || !address) {
@@ -55,14 +42,28 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode }) =
     }
 
     setIsValidating(true);
-    
-    // Simulate Aadhar verification process
-    setTimeout(() => {
-      setIsValidating(false);
-      Alert.alert('Success', 'Aadhar card details verified successfully!', [
+
+    try {
+      if (authToken && baseUrl) {
+        const res = await fetch(`${baseUrl}/verification/aadhar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ number: fullAadharNumber, name: fullName, dob: dateOfBirth }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || 'Failed to save Aadhar');
+      }
+      Alert.alert('Success', 'Aadhar card details saved!', [
         { text: 'Continue', onPress: () => onAadharComplete() }
       ]);
-    }, 2500);
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Unable to save Aadhar details');
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const handleAadharBox1 = (text) => {
@@ -89,7 +90,6 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode }) =
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
       
       <ScrollView 
         style={styles.scrollView}

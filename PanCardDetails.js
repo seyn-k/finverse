@@ -9,21 +9,8 @@ import {
   Alert 
 } from 'react-native';
 
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
-const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode }) => {
+const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken, setDisplayName }) => {
   const [panNumber, setPanNumber] = useState('');
   const [fullName, setFullName] = useState('');
   const [fatherName, setFatherName] = useState('');
@@ -36,7 +23,7 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode }) => {
     return panRegex.test(pan);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!panNumber || !fullName || !fatherName || !dateOfBirth) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -48,14 +35,29 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode }) => {
     }
 
     setIsValidating(true);
-    
-    // Simulate PAN verification process
-    setTimeout(() => {
-      setIsValidating(false);
-      Alert.alert('Success', 'PAN card details verified successfully!', [
+
+    try {
+      if (authToken && baseUrl) {
+        const res = await fetch(`${baseUrl}/verification/pan`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ number: panNumber, name: fullName, dob: dateOfBirth }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || 'Failed to save PAN');
+        if (data?.pan?.name && setDisplayName) setDisplayName(data.pan.name);
+      }
+      Alert.alert('Success', 'PAN card details saved!', [
         { text: 'Continue', onPress: () => onPanComplete() }
       ]);
-    }, 2000);
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Unable to save PAN details');
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const formatPAN = (text) => {
@@ -66,7 +68,6 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode }) => {
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
       
       <View style={styles.header}>
         <Image 

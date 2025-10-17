@@ -8,21 +8,8 @@ import {
   Alert 
 } from 'react-native';
 
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
-const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode }) => {
+const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -54,26 +41,39 @@ const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode }) => {
     setSelectedMethod(method);
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!selectedMethod) {
       Alert.alert('Error', 'Please select a payment method');
       return;
     }
 
     setIsVerifying(true);
-    
-    // Simulate bank verification process
-    setTimeout(() => {
-      setIsVerifying(false);
-      Alert.alert('Success', `${selectedMethod.name} verification completed successfully!`, [
+
+    try {
+      if (authToken && baseUrl) {
+        const res = await fetch(`${baseUrl}/verification/bank`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ accountNumber: '0000000000', ifsc: 'DEMO0000', holderName: selectedMethod.name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || 'Failed to save bank');
+      }
+      Alert.alert('Success', `${selectedMethod.name} verification recorded!`, [
         { text: 'Continue', onPress: () => onBankComplete() }
       ]);
-    }, 3000);
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Unable to save bank details');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
       
       <View style={styles.header}>
         <Image 

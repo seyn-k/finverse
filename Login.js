@@ -6,22 +6,10 @@ import {
   Image, 
   TouchableOpacity, 
   TextInput, 
-  Alert 
+  Alert, 
+  Platform
 } from 'react-native';
-
-// Dark Mode Toggle Component
-const DarkModeToggle = ({ isDarkMode, onToggle }) => {
-  return (
-    <TouchableOpacity 
-      style={[styles.darkModeButton, isDarkMode && styles.darkModeButtonDark]} 
-      onPress={onToggle}
-    >
-      <Text style={[styles.darkModeIcon, isDarkMode && styles.darkModeIconDark]}>
-        {isDarkMode ? '☀️' : '🌙'}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+import Constants from 'expo-constants';
 
 const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMode }) => {
   const [email, setEmail] = useState('');
@@ -29,38 +17,71 @@ const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMo
   const [isSignUp, setIsSignUp] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleLogin = () => {
+  // Resolve base URL depending on simulator/emulator/real device
+  const resolvedHost = (
+    (Constants?.expoConfig?.hostUri || Constants?.manifest?.debuggerHost || '')
+      .toString()
+      .split(':')[0]
+  );
+  const isLocalHost = resolvedHost === 'localhost' || resolvedHost === '127.0.0.1';
+  const BASE_URL = Platform.OS === 'android'
+    ? (!isLocalHost && resolvedHost ? `http://${resolvedHost}:4000` : 'http://10.0.2.2:4000')
+    : (resolvedHost ? `http://${resolvedHost}:4000` : 'http://localhost:4000');
+
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
-    // Simulate login - in real app, you'd validate with backend
-    Alert.alert('Success', 'Login successful!', [
-      { text: 'OK', onPress: () => onLoginSuccess() }
-    ]);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        Alert.alert('Login failed', data?.message || 'Something went wrong');
+        return;
+      }
+      Alert.alert('Success', 'Login successful!', [
+        { text: 'OK', onPress: () => onLoginSuccess(data) }
+      ]);
+    } catch (e) {
+      Alert.alert('Network error', e?.message || 'Please check server connection');
+    }
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-    
-    // Simulate signup - in real app, you'd create account with backend
-    Alert.alert('Success', 'Account created successfully!', [
-      { text: 'OK', onPress: () => onSignupSuccess() }
-    ]);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        Alert.alert('Sign up failed', data?.message || 'Something went wrong');
+        return;
+      }
+      Alert.alert('Success', 'Account created successfully!', [
+        { text: 'OK', onPress: () => onSignupSuccess(data) }
+      ]);
+    } catch (e) {
+      Alert.alert('Network error', e?.message || 'Please check server connection');
+    }
   };
 
   return (
     <View style={[styles.loginContainer, isDarkMode && styles.loginContainerDark]}>
-      <DarkModeToggle isDarkMode={isDarkMode} onToggle={onToggleDarkMode} />
       <View style={styles.loginHeader}>
         <Image 
           source={require('./assets/icon.png')} 
