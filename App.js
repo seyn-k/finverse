@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler, Platform } from 'react-native';
-import { useState, useEffect } from 'react';
+import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler, Platform, Modal, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { useState, useEffect, useRef } from 'react';
 import Constants from 'expo-constants';
 import LoginPage from './Login';
 import QuickStartGuide from './Guide';
@@ -82,8 +84,8 @@ const EditProfileScreen = ({ isDarkMode, onBack, onSave, initialName, initialEma
   );
 };
 
-const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDisplayName, onEditPress, onToggleDarkMode, currentLanguage, onChangeLanguage }) => {
-  const [currentScreen, setCurrentScreen] = useState('account'); // account, settings, privacy, notifications, linked-banks, support
+const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDisplayName, onEditPress, onToggleDarkMode, currentLanguage, onChangeLanguage, initialScreen }) => {
+  const [currentScreen, setCurrentScreen] = useState(initialScreen || 'account'); // account, settings, privacy, notifications, linked-banks, support
   const [notificationSettings, setNotificationSettings] = useState({
     transactionAlerts: false,
     marketingUpdates: false,
@@ -99,6 +101,8 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
   const [accessibility, setAccessibility] = useState({ largerText: false, reduceMotion: false, highContrast: false });
   const [privacy, setPrivacy] = useState({ oldPassword: '', newPassword: '', confirmPassword: '', twoFactor: false, biometric: false, question1: '', answer1: '', recoveryEmail: '' });
   const [savedFlag, setSavedFlag] = useState('');
+  const screenHeight = Dimensions.get('window').height;
+  const settingsSheetY = useRef(new Animated.Value(screenHeight)).current;
 
   // Handle Android back button
   useEffect(() => {
@@ -116,6 +120,28 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
 
     return () => backHandler.remove();
   }, [currentScreen, onBack]);
+
+  // Sync when initialScreen prop changes
+  useEffect(() => {
+    if (initialScreen) setCurrentScreen(initialScreen);
+  }, [initialScreen]);
+
+  // Animate Settings sheet open/close
+  useEffect(() => {
+    if (currentScreen === 'settings') {
+      Animated.timing(settingsSheetY, {
+        toValue: 0,
+        duration: 280,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(settingsSheetY, {
+        toValue: screenHeight,
+        duration: 240,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [currentScreen, screenHeight, settingsSheetY]);
 
   const toggleNotification = (key) => {
     setNotificationSettings(prev => ({
@@ -232,26 +258,39 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
   };
 
   const renderSettingsScreen = () => (
-    <ScrollView style={styles.profileContent} contentContainerStyle={{ paddingBottom: 100 }}>
-      {[
-        { icon: '☀️', title: 'Display', action: () => setCurrentScreen('display') },
-        { icon: '🌐', title: 'Language', action: () => setCurrentScreen('language') },
-        { icon: '👤', title: 'Accessibility', action: () => setCurrentScreen('accessibility') },
-        { icon: '🔔', title: 'Notifications', action: () => setCurrentScreen('notifications') },
-      ].map((item) => (
-        <TouchableOpacity 
-          key={item.title}
-          style={[styles.menuItem, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#e6e8ed' }]}
-          onPress={item.action}
-        >
-          <View style={styles.menuItemLeft}>
-            <Text style={styles.menuItemIcon}>{item.icon}</Text>
-            <Text style={[styles.menuItemText, { color: textColor }]}>{item.title}</Text>
+    <>
+      <TouchableOpacity activeOpacity={1} onPress={() => setCurrentScreen('account')} style={styles.settingsBackdrop} />
+      <Animated.View style={[
+        styles.settingsSheet,
+        { transform: [{ translateY: settingsSheetY }] }
+      ]}>
+        <LinearGradient colors={[isDarkMode ? '#1f3b8a' : '#2563eb', isDarkMode ? '#0f172a' : '#1d4ed8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}>
+            <Text style={[styles.profileHeaderTitle, { color: '#fff', textAlign: 'center', marginBottom: 12 }]}>Settings</Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+              {[
+                { icon: '☀️', title: 'Display', action: () => setCurrentScreen('display') },
+                { icon: '🌐', title: 'Language', action: () => setCurrentScreen('language') },
+                { icon: '👤', title: 'Accessibility', action: () => setCurrentScreen('accessibility') },
+                { icon: '🔔', title: 'Notifications', action: () => setCurrentScreen('notifications') },
+              ].map((item) => (
+                <TouchableOpacity 
+                  key={item.title}
+                  style={[styles.menuItem, { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.18)' }]}
+                  onPress={item.action}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <Text style={styles.menuItemIcon}>{item.icon}</Text>
+                    <Text style={[styles.menuItemText, { color: '#fff' }]}>{item.title}</Text>
+                  </View>
+                  <Text style={[styles.menuItemArrow, { color: 'rgba(255,255,255,0.8)' }]}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-          <Text style={[styles.menuItemArrow, { color: mutedColor }]}>›</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        </LinearGradient>
+      </Animated.View>
+    </>
   );
 
   const renderDisplayScreen = () => (
@@ -638,7 +677,11 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
         </View>
       </View>
 
-      {renderCurrentScreen()}
+      {/* Render account and other screens. If settings is active, keep Account in the background */}
+      {currentScreen !== 'settings' ? renderCurrentScreen() : renderAccountScreen()}
+
+      {/* Settings as animated bottom sheet */}
+      {currentScreen === 'settings' && renderSettingsScreen()}
     </View>
   );
 };
@@ -659,6 +702,9 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   const [showMoneyTransactionPage, setShowMoneyTransactionPage] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPayContactPage, setShowPayContactPage] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [profileInitialScreen, setProfileInitialScreen] = useState('account');
+  const homeSettingsY = useRef(new Animated.Value(Dimensions.get('window').height)).current;
   const [contacts] = useState([
     { name: 'Ashish', avatar: '👤', color: '#32CD32' },
     { name: 'Abi', avatar: '👤', color: '#FFD700' },
@@ -683,13 +729,26 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
         setShowProfile(false);
         return true; // Prevent default behavior
       }
+      if (showSettings) {
+        setShowSettings(false);
+        return true;
+      }
       return false; // Allow default behavior (exit app)
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [showMoneyTransactionPage, showProfile, showPayContactPage]);
+  }, [showMoneyTransactionPage, showProfile, showPayContactPage, showSettings]);
+
+  // Animate Home settings sheet
+  useEffect(() => {
+    Animated.timing(homeSettingsY, {
+      toValue: showSettings ? 0 : Dimensions.get('window').height,
+      duration: showSettings ? 280 : 220,
+      useNativeDriver: true,
+    }).start();
+  }, [showSettings, homeSettingsY]);
 
   useEffect(() => {
     const backAction = () => {
@@ -713,6 +772,16 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      {/* Simple Top Header */}
+      <View style={[styles.simpleTopHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}>
+        <TouchableOpacity style={[styles.roundIconBtn, { backgroundColor: '#eef2ff' }]} onPress={() => setShowSettings(true)}>
+          <Text style={[styles.roundIconText, { color: '#2563eb' }]}>⚙️</Text>
+        </TouchableOpacity>
+        <Text style={[styles.simpleTopHeaderTitle, { color: textColor }]}>Home</Text>
+        <TouchableOpacity style={[styles.roundIconBtn, { backgroundColor: '#eef2ff' }]}>
+          <Text style={[styles.roundIconText, { color: '#2563eb' }]}>🔔</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Top welcome header - hidden on payments page */}
       {bottomActive !== 2 && (
@@ -730,8 +799,10 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
               </View>
             </View>
           )}
+
+      
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.avatarWrap} onPress={() => setShowProfile(true)}>
+            <TouchableOpacity style={styles.avatarWrap} onPress={() => { setProfileInitialScreen('account'); setShowProfile(true); }}>
               <Image source={require('./assets/icon.png')} style={styles.avatar} />
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
@@ -754,10 +825,23 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
 
           {/* Segmented buttons */}
           <View style={styles.segmentRow}>
-            { (bottomActive === 1 ? ['Investment','Trade','Finance'] : ['Invester','Trader','Finance']).map((label, idx) => (
-              <TouchableOpacity key={label} onPress={() => setActiveSegment(idx)} style={[styles.segmentBtn, activeSegment === idx && styles.segmentActive]}> 
-                <Text style={[activeSegment === idx ? styles.segmentActiveText : styles.segmentText, activeSegment !== idx && { color: textColor } ]}>{label}</Text>
-              </TouchableOpacity>
+            { ['Invest','Trade','Finance'].map((label, idx) => (
+              activeSegment === idx ? (
+                <TouchableOpacity key={label} onPress={() => setActiveSegment(idx)}>
+                  <LinearGradient
+                    colors={['#2563eb', '#1e40af']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={[styles.segmentBtnGradient]}
+                  >
+                    <Text style={styles.segmentActiveText}>{label}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity key={label} onPress={() => setActiveSegment(idx)} style={[styles.segmentBtn, styles.segmentBtnOutline]}> 
+                  <Text style={[styles.segmentTextBlue]}>{label}</Text>
+                </TouchableOpacity>
+              )
             ))}
           </View>
         </View>
@@ -1540,6 +1624,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
           onToggleDarkMode={onToggleDarkMode}
           currentLanguage={currentLanguage}
           onChangeLanguage={onChangeLanguage}
+          initialScreen={profileInitialScreen}
         />
       )}
       {showProfile && showEditProfile && (
@@ -1551,6 +1636,58 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
           initialEmail={profileEmail}
         />
       )}
+
+      {/* Home Settings Bottom Sheet (Modal to enforce top-most overlay) */}
+      <Modal visible={showSettings} transparent animationType="none" onRequestClose={() => setShowSettings(false)}>
+        <View style={{ flex: 1 }}>
+          {/* Background blur */}
+          <BlurView tint={isDarkMode ? 'dark' : 'light'} intensity={40} style={StyleSheet.absoluteFillObject} />
+          {/* Dim overlay to catch taps */}
+          <TouchableOpacity style={[styles.settingsBackdrop, { backgroundColor: 'rgba(0,0,0,0.25)' }]} activeOpacity={1} onPress={() => setShowSettings(false)} />
+          <Animated.View style={[styles.settingsSheet, { transform: [{ translateY: homeSettingsY }] }]}>
+            <LinearGradient colors={[isDarkMode ? '#1f3b8a' : '#2563eb', isDarkMode ? '#0f172a' : '#1d4ed8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+              <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}>
+                <Text style={[styles.profileHeaderTitle, { color: '#fff', textAlign: 'center' }]}>Settings</Text>
+                {/* Avatar + Name */}
+                <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 12 }}>
+                  <View style={[styles.profileImageContainer, { borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Image source={require('./assets/icon.png')} style={styles.profileImage} />
+                  </View>
+                  <Text style={[styles.profileHeaderTitle, { color: '#fff', marginTop: 4 }]}>{displayName || 'User'}</Text>
+                </View>
+                {/* Edit Profile Pill */}
+                <TouchableOpacity style={styles.sheetPillBtn} onPress={() => { setShowSettings(false); setProfileInitialScreen('account'); setShowProfile(true); onOpenEditProfile && onOpenEditProfile(); }}>
+                  <Text style={styles.sheetPillBtnText}>Edit Profile</Text>
+                </TouchableOpacity>
+
+                <ScrollView contentContainerStyle={{ paddingBottom: 120, paddingTop: 12 }}>
+                  {[
+                    { icon: '📈', title: 'Investment calculator', action: () => {} },
+                    { icon: '🔗', title: 'Linked Banks', action: () => { setShowSettings(false); setProfileInitialScreen('linked-banks'); setShowProfile(true); } },
+                    { icon: '❓', title: 'Support', action: () => { setShowSettings(false); setProfileInitialScreen('support'); setShowProfile(true); } },
+                    { icon: '🛡️', title: 'Privacy & Security', action: () => { setShowSettings(false); setProfileInitialScreen('privacy'); setShowProfile(true); } },
+                    { icon: '🌐', title: 'Language', action: () => { setShowSettings(false); setProfileInitialScreen('language'); setShowProfile(true); } },
+                    { icon: '🔔', title: 'Notifications', action: () => { setShowSettings(false); setProfileInitialScreen('notifications'); setShowProfile(true); } },
+                  ].map((item) => (
+                    <TouchableOpacity key={item.title} style={[styles.menuItem, { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.18)' }]} onPress={item.action}>
+                      <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuItemIcon}>{item.icon}</Text>
+                        <Text style={[styles.menuItemText, { color: '#fff' }]}>{item.title}</Text>
+                      </View>
+                      <Text style={[styles.menuItemArrow, { color: 'rgba(255,255,255,0.8)' }]}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  {/* Logout pill */}
+                  <TouchableOpacity style={[styles.sheetPillBtn, { marginTop: 16 }]} onPress={onLogout}>
+                    <Text style={[styles.sheetPillBtnText, { color: '#0b1220' }]}>Log out</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };

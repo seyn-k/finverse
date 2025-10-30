@@ -99,10 +99,33 @@ export const styles = StyleSheet.create({
   },
   // Home specific styles
   homeHeader: {
-    paddingTop: 50,
-    paddingBottom: 14,
+    paddingTop: 8,
+    paddingBottom: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
+  },
+  simpleTopHeader: {
+    paddingTop: 50,
+    paddingBottom: 6,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  simpleTopHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  roundIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roundIconText: {
+    fontSize: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -178,7 +201,7 @@ export const styles = StyleSheet.create({
   segmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 6,
   },
   segmentBtn: {
     paddingVertical: 8,
@@ -188,12 +211,27 @@ export const styles = StyleSheet.create({
     borderColor: '#dbe0ea',
     marginRight: 8,
   },
+  segmentBtnOutline: {
+    borderColor: '#2563eb',
+    backgroundColor: 'transparent',
+  },
+  segmentBtnGradient: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    marginRight: 8,
+  },
   segmentActive: {
     backgroundColor: '#2563eb',
     borderColor: '#2563eb',
   },
   segmentText: {
     fontSize: 13,
+  },
+  segmentTextBlue: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
   },
   segmentActiveText: {
     color: '#ffffff',
@@ -1320,6 +1358,45 @@ export const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Settings Bottom Sheet
+  settingsBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 9998,
+    elevation: 12,
+  },
+  settingsSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '86%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 14,
+    zIndex: 9999,
+    backgroundColor: '#2563eb',
+  },
+  sheetPillBtn: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  sheetPillBtnText: {
+    color: '#0b1220',
+    fontSize: 14,
+    fontWeight: '700',
   },
   notificationSection: {
     marginBottom: 24,
