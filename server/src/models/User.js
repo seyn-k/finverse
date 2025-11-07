@@ -9,16 +9,22 @@ const userSchema = new mongoose.Schema(
       number: { type: String, trim: true },
       name: { type: String, trim: true },
       dob: { type: String, trim: true },
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date }
     },
     aadhar: {
       number: { type: String, trim: true },
       name: { type: String, trim: true },
       dob: { type: String, trim: true },
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date }
     },
     bank: {
       accountNumber: { type: String, trim: true },
       ifsc: { type: String, trim: true },
       holderName: { type: String, trim: true },
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date }
     },
     kyc: {
       completedAt: { type: Date },

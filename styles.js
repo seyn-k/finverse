@@ -1,6 +1,16 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
+  fullScreen: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    padding: 16,
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#1a1a2e',

@@ -60,11 +60,24 @@ router.post("/pan", async (req, res, next) => {
   try {
     const { number, name, dob } = req.body || {};
     if (!number) return res.status(400).json({ message: "PAN number is required" });
+    
+    // Check if PAN verification is already completed
+    const existingUser = await User.findById(req.userId).select("pan");
+    if (existingUser.pan.verified) {
+      return res.status(400).json({ message: "PAN verification already completed" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       {
         $set: {
-          pan: { number, name, dob },
+          pan: {
+            number,
+            name,
+            dob,
+            verified: true,
+            verifiedAt: new Date()
+          },
           verificationStep: "aadhar",
         },
       },
@@ -81,11 +94,28 @@ router.post("/aadhar", async (req, res, next) => {
   try {
     const { number, name, dob } = req.body || {};
     if (!number) return res.status(400).json({ message: "Aadhaar number is required" });
+    
+    // Check if Aadhaar verification is already completed
+    const existingUser = await User.findById(req.userId).select("aadhar pan");
+    if (existingUser.aadhar.verified) {
+      return res.status(400).json({ message: "Aadhaar verification already completed" });
+    }
+    // Check if PAN verification is completed
+    if (!existingUser.pan.verified) {
+      return res.status(400).json({ message: "Please complete PAN verification first" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       {
         $set: {
-          aadhar: { number, name, dob },
+          aadhar: {
+            number,
+            name,
+            dob,
+            verified: true,
+            verifiedAt: new Date()
+          },
           verificationStep: "bank",
         },
       },
@@ -102,11 +132,28 @@ router.post("/bank", async (req, res, next) => {
   try {
     const { accountNumber, ifsc, holderName } = req.body || {};
     if (!accountNumber || !ifsc) return res.status(400).json({ message: "accountNumber and ifsc are required" });
+    
+    // Check if Bank verification is already completed
+    const existingUser = await User.findById(req.userId).select("bank aadhar");
+    if (existingUser.bank.verified) {
+      return res.status(400).json({ message: "Bank verification already completed" });
+    }
+    // Check if Aadhaar verification is completed
+    if (!existingUser.aadhar.verified) {
+      return res.status(400).json({ message: "Please complete Aadhaar verification first" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       {
         $set: {
-          bank: { accountNumber, ifsc, holderName },
+          bank: {
+            accountNumber,
+            ifsc,
+            holderName,
+            verified: true,
+            verifiedAt: new Date()
+          },
           verificationStep: "kyc",
         },
       },
@@ -121,6 +168,16 @@ router.post("/bank", async (req, res, next) => {
 // Complete KYC and set done
 router.post("/kyc/complete", async (req, res, next) => {
   try {
+    // Check if KYC is already completed
+    const existingUser = await User.findById(req.userId).select("kyc bank");
+    if (existingUser.kyc.status === "completed") {
+      return res.status(400).json({ message: "KYC already completed" });
+    }
+    // Check if Bank verification is completed
+    if (!existingUser.bank.verified) {
+      return res.status(400).json({ message: "Please complete Bank verification first" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       {

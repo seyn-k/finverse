@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler, Platform, Modal, StyleSheet } from 'react-native';
+import { Text, View, Image, Animated, TouchableOpacity, Dimensions, ScrollView, TextInput, BackHandler, Platform, Modal, StyleSheet, SafeAreaView } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useState, useEffect, useRef } from 'react';
@@ -10,7 +11,9 @@ import PanCardDetails from './PanCardDetails';
 import AadharCardDetails from './AadharCardDetails';
 import BankVerification from './BankVerification';
 import KYCVerification from './KYCVerification';
+import StockDetailsScreen from './StockDetailsScreen';
 import { styles } from './styles';
+import GrowthOpportunities from './GrowthOpportunities.js';
 
 // Loading Screen Component
 const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
@@ -687,7 +690,8 @@ const ProfileScreen = ({ isDarkMode, onBack, onLogout, displayName, onSaveDispla
 };
 
 // Homepage Component
-const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout, displayName, profileEmail, onEditProfile, onOpenProfile, showEditProfile, onOpenEditProfile, onCloseEditProfile, onSaveProfile, currentLanguage, onChangeLanguage }) => {
+
+const HomePageContent = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, onLogout, displayName, profileEmail, onEditProfile, onOpenProfile, showEditProfile, onOpenEditProfile, onCloseEditProfile, onSaveProfile, currentLanguage, onChangeLanguage }) => {
   if (showGuide) {
     return <QuickStartGuide onComplete={onGuideComplete} isDarkMode={isDarkMode} />;
   }
@@ -696,6 +700,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   const mutedColor = isDarkMode ? '#aeb4c1' : '#6b7280';
   const cardBg = isDarkMode ? '#1f2937' : '#f4f6f9';
   const surface = isDarkMode ? '#111827' : '#ffffff';
+  const [showStockDetails, setShowStockDetails] = useState(false);
   const [activeTopTab, setActiveTopTab] = useState(0); // 0 Stocks, 1 Mutual Funds, 2 Gold, 3 ETFs, 4 Coins
   const [activeSegment, setActiveSegment] = useState(0); // 0 Investor, 1 Trader, 2 Finance
   const [bottomActive, setBottomActive] = useState(0); // 0 Home, 1 Portfolio, 2 Payments
@@ -703,6 +708,20 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   const [showProfile, setShowProfile] = useState(false);
   const [showPayContactPage, setShowPayContactPage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showGrowthOpportunities, setShowGrowthOpportunities] = useState(false);
+  
+  // Handle navigation to StockDetails
+  useEffect(() => {
+    const backAction = () => {
+      if (showStockDetails) {
+        setShowStockDetails(null);
+        return true;
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [showStockDetails]);
   const [profileInitialScreen, setProfileInitialScreen] = useState('account');
   const homeSettingsY = useRef(new Animated.Value(Dimensions.get('window').height)).current;
   const [contacts] = useState([
@@ -772,6 +791,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      
       {/* Simple Top Header */}
       <View style={[styles.simpleTopHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}>
         <TouchableOpacity style={[styles.roundIconBtn, { backgroundColor: '#eef2ff' }]} onPress={() => setShowSettings(true)}>
@@ -782,7 +802,7 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
           <Text style={[styles.roundIconText, { color: '#2563eb' }]}>🔔</Text>
         </TouchableOpacity>
       </View>
-
+      
       {/* Top welcome header - hidden on payments page */}
       {bottomActive !== 2 && (
         <View style={[styles.homeHeader, { backgroundColor: surface, borderBottomColor: isDarkMode ? '#222' : '#e6e8ed' }]}>
@@ -994,6 +1014,44 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
         )}
 
         {/* Content switches by bottom tab and top tab */}
+        {bottomActive === 0 && (
+          <View>
+            <TouchableOpacity 
+              style={[styles.menuItem, { 
+                backgroundColor: surface, 
+                borderColor: isDarkMode ? '#222' : '#e6e8ed',
+                marginTop: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                borderRadius: 12,
+                marginHorizontal: 16
+              }]}
+              onPress={() => setShowGrowthOpportunities(true)}
+            >
+              <View style={{ 
+                width: 40, 
+                height: 40, 
+                backgroundColor: '#eef2ff', 
+                borderRadius: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}>
+                <Text style={{ fontSize: 20 }}>📈</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuItemText, { color: textColor, fontSize: 16, fontWeight: '600' }]}>
+                  Growth Opportunities
+                </Text>
+                <Text style={[styles.menuItemText, { color: mutedColor, fontSize: 14 }]}>
+                  Explore investment opportunities
+                </Text>
+              </View>
+              <Text style={[styles.menuItemArrow, { color: mutedColor }]}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {bottomActive === 1 && (
           <>
             {/* Portfolio header summary cards */}
@@ -1091,17 +1149,35 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
             </View>
             <View style={styles.cardList}>
               {[
-                { name: 'NIFTY 50', value: '17,500' },
-                { name: 'Sensex', value: '59,000' },
+                { name: 'NIFTY 50', value: '17,500', change: '+1.2%' },
+                { name: 'Sensex', value: '59,000', change: '+0.8%' },
               ].map((i) => (
-                <View key={i.name} style={[styles.indexCard, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#eef0f4' }]}>
+                <TouchableOpacity
+                  key={i.name}
+                  style={[styles.indexCard, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#eef0f4' }]}
+                  onPress={() => setShowStockDetails({
+                    name: i.name,
+                    symbol: i.name.split(' ')[0],
+                    price: parseFloat(i.value.replace(',', '')),
+                    change: 1.2,
+                    changePercent: 1.2,
+                    open: parseFloat(i.value.replace(',', '')),
+                    previousClose: parseFloat(i.value.replace(',', '')) - 100,
+                    dayLow: parseFloat(i.value.replace(',', '')) - 200,
+                    dayHigh: parseFloat(i.value.replace(',', '')) + 200,
+                    yearLow: parseFloat(i.value.replace(',', '')) - 1000,
+                    yearHigh: parseFloat(i.value.replace(',', '')) + 1000,
+                    exchange: 'NSE',
+                    type: 'index'
+                  })}
+                >
                   <View style={[styles.iconSquare, { backgroundColor: cardBg }]} />
                   <View style={styles.indexTextWrap}>
                     <Text style={[styles.indexName, { color: textColor }]}>{i.name}</Text>
                     <Text style={[styles.indexSub, { color: '#3b82f6' }]}>Current Value</Text>
                   </View>
                   <Text style={[styles.indexValue, { color: textColor }]}>{i.value}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
 
@@ -1118,14 +1194,18 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
                 { name: 'Global Energy Ltd.', shares: '5 Shares', price: '$678.90' },
                 { name: 'Health Solutions Co.', shares: '20 Shares', price: '$3,456.78' },
               ].map((h) => (
-                <View key={h.name} style={[styles.holdingCard, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#eef0f4' }]}>
+                <TouchableOpacity 
+                  key={h.name} 
+                  style={[styles.holdingCard, { backgroundColor: surface, borderColor: isDarkMode ? '#222' : '#eef0f4' }]}
+                  onPress={() => setShowStockDetails({ name: h.name, symbol: h.name.split(' ')[0], price: parseFloat(h.price.replace('$', '').replace(',', '')), change: '+2.5%' })}
+                >
                   <View style={[styles.holdingIcon, { backgroundColor: cardBg }]} />
                   <View style={styles.holdingTextWrap}>
                     <Text style={[styles.holdingName, { color: textColor }]}>{h.name}</Text>
                     <Text style={[styles.holdingSub, { color: mutedColor }]}>{h.shares}</Text>
                   </View>
                   <Text style={[styles.holdingValue, { color: textColor }]}>{h.price}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           </>
@@ -1637,6 +1717,35 @@ const HomePage = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkMode, on
         />
       )}
 
+      {/* Stock Details Screen */}
+      <Modal
+        visible={!!showStockDetails}
+        animationType="slide"
+        onRequestClose={() => setShowStockDetails(false)}
+        transparent={true}
+      >
+        {showStockDetails && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'white' }]}>
+            <StockDetailsScreen 
+              route={{ params: { stock: showStockDetails } }}
+              navigation={{ goBack: () => setShowStockDetails(false) }}
+            />
+          </View>
+        )}
+      </Modal>
+
+      {/* Growth Opportunities Screen */}
+      {showGrowthOpportunities && (
+        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+          <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
+            <GrowthOpportunities 
+              isDarkMode={isDarkMode} 
+              onClose={() => setShowGrowthOpportunities(false)}
+            />
+          </View>
+        </View>
+      )}
+
       {/* Home Settings Bottom Sheet (Modal to enforce top-most overlay) */}
       <Modal visible={showSettings} transparent animationType="none" onRequestClose={() => setShowSettings(false)}>
         <View style={{ flex: 1 }}>
@@ -1909,7 +2018,7 @@ export default function App() {
       ) : showKYCVerification ? (
         <KYCVerification onKYCComplete={handleKYCComplete} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} baseUrl={BASE_URL} authToken={authToken} />
       ) : (
-        <HomePage 
+        <HomePageContent 
           showGuide={showGuide} 
           onGuideComplete={handleGuideComplete} 
           isDarkMode={isDarkMode} 
