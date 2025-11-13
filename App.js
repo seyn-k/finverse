@@ -14,6 +14,7 @@ import KYCVerification from './KYCVerification';
 import StockDetailsScreen from './StockDetailsScreen';
 import { styles } from './styles';
 import GrowthOpportunities from './GrowthOpportunities.js';
+import ChatBot from './ChatBot.js';
 
 // Loading Screen Component
 const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
@@ -709,6 +710,7 @@ const HomePageContent = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkM
   const [showPayContactPage, setShowPayContactPage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showGrowthOpportunities, setShowGrowthOpportunities] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
   
   // Handle navigation to StockDetails
   useEffect(() => {
@@ -1674,9 +1676,20 @@ const HomePageContent = ({ showGuide, onGuideComplete, isDarkMode, onToggleDarkM
       </ScrollView>
 
       {/* Chat FAB */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: '#7c4dff' }]}>
+      <TouchableOpacity 
+        style={[styles.fab, { backgroundColor: '#7c4dff' }]}
+        onPress={() => setShowChatBot(!showChatBot)}
+      >
         <Text style={styles.fabIcon}>💬</Text>
       </TouchableOpacity>
+
+      {/* ChatBot Component */}
+      {showChatBot && (
+        <ChatBot 
+          isDarkMode={isDarkMode} 
+          onClose={() => setShowChatBot(false)}
+        />
+      )}
 
       {/* Bottom Nav (static) */}
       <View style={[styles.bottomBar, { backgroundColor: surface, borderTopColor: isDarkMode ? '#222' : '#e6e8ed' }]}>
