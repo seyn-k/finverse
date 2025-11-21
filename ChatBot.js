@@ -8,24 +8,19 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const ChatBotStyles = StyleSheet.create({
   chatContainer: {
     position: 'absolute',
-    bottom: 80,
-    right: 16,
-    width: 350,
-    maxHeight: 550,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 10,
   },
   chatHeader: {
     backgroundColor: '#3b82f6',
@@ -58,7 +53,6 @@ const ChatBotStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#f9fafb',
-    maxHeight: 380,
   },
   botMessage: {
     backgroundColor: '#e0e7ff',
@@ -145,26 +139,16 @@ const ChatBot = ({ isDarkMode, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollViewRef = useRef(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    scrollToBottom();
+  }, [messages]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -226,33 +210,38 @@ const ChatBot = ({ isDarkMode, onClose }) => {
 
   const containerStyle = isDarkMode
     ? {
-        backgroundColor: '#1f2937',
-        borderTopColor: '#374151',
-      }
+      backgroundColor: '#1f2937',
+      borderTopColor: '#374151',
+    }
     : {};
 
   const headerStyle = isDarkMode
     ? {
-        backgroundColor: '#1e3a8a',
-      }
+      backgroundColor: '#1e3a8a',
+    }
     : {};
 
   const messagesStyle = isDarkMode
     ? {
-        backgroundColor: '#111827',
-      }
+      backgroundColor: '#111827',
+    }
     : {};
 
   const inputStyle = isDarkMode
     ? {
-        backgroundColor: '#374151',
-        borderColor: '#4b5563',
-        color: '#fff',
-      }
+      backgroundColor: '#374151',
+      borderColor: '#4b5563',
+      color: '#fff',
+    }
     : {};
 
   return (
-    <Animated.View style={[{ opacity: fadeAnim }]}>
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={true}
+      onRequestClose={onClose}
+    >
       <View style={[ChatBotStyles.chatContainer, containerStyle]}>
         {/* Header */}
         <View style={[ChatBotStyles.chatHeader, headerStyle]}>
@@ -335,7 +324,7 @@ const ChatBot = ({ isDarkMode, onClose }) => {
           </TouchableOpacity>
         </View>
       </View>
-    </Animated.View>
+    </Modal>
   );
 };
 

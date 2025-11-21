@@ -9,5 +9,3 @@ export async function connectToDatabase(mongoUri) {
     dbName: process.env.MONGODB_DB || undefined,
   });
 }
-
-
