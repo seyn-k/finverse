@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  Alert 
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 
 
@@ -50,18 +50,22 @@ const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode, baseUr
     setIsVerifying(true);
 
     try {
-      if (authToken && baseUrl) {
-        const res = await fetch(`${baseUrl}/verification/bank`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ accountNumber: '0000000000', ifsc: 'DEMO0000', holderName: selectedMethod.name }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Failed to save bank');
+      if (!authToken || !baseUrl) {
+        Alert.alert('Error', 'Authentication error. Please login again.');
+        return;
       }
+
+      const res = await fetch(`${baseUrl}/verification/bank`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ accountNumber: '0000000000', ifsc: 'DEMO0000', holderName: selectedMethod.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to save bank');
+
       Alert.alert('Success', `${selectedMethod.name} verification recorded!`, [
         { text: 'Continue', onPress: () => onBankComplete() }
       ]);
@@ -74,10 +78,10 @@ const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode, baseUr
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      
+
       <View style={styles.header}>
-        <Image 
-          source={require('./assets/icon.png')} 
+        <Image
+          source={require('./assets/icon.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -140,11 +144,11 @@ const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode, baseUr
           ))}
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.verifyButton, 
+            styles.verifyButton,
             (!selectedMethod || isVerifying) && styles.verifyButtonDisabled
-          ]} 
+          ]}
           onPress={handleVerify}
           disabled={!selectedMethod || isVerifying}
         >

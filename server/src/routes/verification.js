@@ -19,8 +19,16 @@ function authMiddleware(req, res, next) {
 
 router.use(authMiddleware);
 
+// Simple logger for verification actions (debug help)
+function logDebug(userId, action, body) {
+  // keep logs minimal and safe (avoid logging secrets)
+  // eslint-disable-next-line no-console
+  console.info(`[verification] user=${userId} action=${action} body=${JSON.stringify(body || {})}`);
+}
+
 router.get("/me", async (req, res, next) => {
   try {
+    logDebug(req.userId, "me", null);
     const user = await User.findById(req.userId).select(
       "email verificationStep pan aadhar bank kyc"
     );
@@ -42,6 +50,7 @@ router.get("/me", async (req, res, next) => {
 router.post("/advance", async (req, res, next) => {
   try {
     const { to } = req.body || {};
+    logDebug(req.userId, "advance", { to });
     const allowed = ["pan", "aadhar", "bank", "kyc", "done"];
     if (!allowed.includes(to)) return res.status(400).json({ message: "Invalid step" });
     const user = await User.findByIdAndUpdate(
@@ -59,6 +68,7 @@ router.post("/advance", async (req, res, next) => {
 router.post("/pan", async (req, res, next) => {
   try {
     const { number, name, dob } = req.body || {};
+    logDebug(req.userId, "pan", { number, name, dob });
     if (!number) return res.status(400).json({ message: "PAN number is required" });
     
     // Check if PAN verification is already completed
@@ -83,6 +93,8 @@ router.post("/pan", async (req, res, next) => {
       },
       { new: true }
     ).select("email verificationStep pan");
+    // eslint-disable-next-line no-console
+    console.info(`[verification] updated pan for user=${req.userId} panVerified=${user.pan.verified}`);
     res.json({ id: user.id, email: user.email, verificationStep: user.verificationStep, pan: user.pan });
   } catch (e) {
     next(e);
@@ -93,6 +105,7 @@ router.post("/pan", async (req, res, next) => {
 router.post("/aadhar", async (req, res, next) => {
   try {
     const { number, name, dob } = req.body || {};
+    logDebug(req.userId, "aadhar", { number, name, dob });
     if (!number) return res.status(400).json({ message: "Aadhaar number is required" });
     
     // Check if Aadhaar verification is already completed
@@ -121,6 +134,8 @@ router.post("/aadhar", async (req, res, next) => {
       },
       { new: true }
     ).select("email verificationStep aadhar");
+    // eslint-disable-next-line no-console
+    console.info(`[verification] updated aadhar for user=${req.userId} aadharVerified=${user.aadhar.verified}`);
     res.json({ id: user.id, email: user.email, verificationStep: user.verificationStep, aadhar: user.aadhar });
   } catch (e) {
     next(e);
@@ -131,6 +146,7 @@ router.post("/aadhar", async (req, res, next) => {
 router.post("/bank", async (req, res, next) => {
   try {
     const { accountNumber, ifsc, holderName } = req.body || {};
+    logDebug(req.userId, "bank", { accountNumber, ifsc, holderName });
     if (!accountNumber || !ifsc) return res.status(400).json({ message: "accountNumber and ifsc are required" });
     
     // Check if Bank verification is already completed
@@ -159,6 +175,8 @@ router.post("/bank", async (req, res, next) => {
       },
       { new: true }
     ).select("email verificationStep bank");
+    // eslint-disable-next-line no-console
+    console.info(`[verification] updated bank for user=${req.userId} bankVerified=${user.bank.verified}`);
     res.json({ id: user.id, email: user.email, verificationStep: user.verificationStep, bank: user.bank });
   } catch (e) {
     next(e);
@@ -168,6 +186,7 @@ router.post("/bank", async (req, res, next) => {
 // Complete KYC and set done
 router.post("/kyc/complete", async (req, res, next) => {
   try {
+    logDebug(req.userId, "kyc/complete", null);
     // Check if KYC is already completed
     const existingUser = await User.findById(req.userId).select("kyc bank");
     if (existingUser.kyc.status === "completed") {
@@ -186,7 +205,23 @@ router.post("/kyc/complete", async (req, res, next) => {
       },
       { new: true }
     ).select("email verificationStep kyc");
+    // eslint-disable-next-line no-console
+    console.info(`[verification] completed kyc for user=${req.userId} status=${user.kyc.status}`);
     res.json({ id: user.id, email: user.email, verificationStep: user.verificationStep, kyc: user.kyc });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Debug route: returns the full user document for the current authenticated user
+// This is intended for local development only.
+router.get("/debug", async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId).lean();
+    if (!user) return res.status(404).json({ message: "Not found" });
+    // don't return sensitive fields
+    delete user.passwordHash;
+    res.json(user);
   } catch (e) {
     next(e);
   }

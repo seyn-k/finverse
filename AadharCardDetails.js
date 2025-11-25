@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  TextInput, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  TextInput,
   Alert,
-  ScrollView 
+  ScrollView
 } from 'react-native';
 
 
@@ -30,7 +30,7 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, bas
 
   const handleSubmit = async () => {
     const fullAadharNumber = aadharBox1 + aadharBox2 + aadharBox3;
-    
+
     if (!aadharBox1 || !aadharBox2 || !aadharBox3 || !fullName || !fatherName || !motherName || !dateOfBirth || !address) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -44,18 +44,22 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, bas
     setIsValidating(true);
 
     try {
-      if (authToken && baseUrl) {
-        const res = await fetch(`${baseUrl}/verification/aadhar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ number: fullAadharNumber, name: fullName, dob: dateOfBirth }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Failed to save Aadhar');
+      if (!authToken || !baseUrl) {
+        Alert.alert('Error', 'Authentication error. Please login again.');
+        return;
       }
+
+      const res = await fetch(`${baseUrl}/verification/aadhar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ number: fullAadharNumber, name: fullName, dob: dateOfBirth }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to save Aadhar');
+
       Alert.alert('Success', 'Aadhar card details saved!', [
         { text: 'Continue', onPress: () => onAadharComplete() }
       ]);
@@ -90,16 +94,16 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, bas
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Image 
-            source={require('./assets/icon.png')} 
+          <Image
+            source={require('./assets/icon.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -112,137 +116,137 @@ const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, bas
         </View>
 
         <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Aadhar Number *
-          </Text>
-          <View style={styles.aadharContainer}>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Aadhar Number *
+            </Text>
+            <View style={styles.aadharContainer}>
+              <TextInput
+                style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
+                placeholder="1234"
+                placeholderTextColor={isDarkMode ? '#666' : '#999'}
+                value={aadharBox1}
+                onChangeText={handleAadharBox1}
+                keyboardType="numeric"
+                maxLength={4}
+                textAlign="center"
+              />
+              <Text style={[styles.aadharSeparator, isDarkMode && styles.aadharSeparatorDark]}>-</Text>
+              <TextInput
+                style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
+                placeholder="5678"
+                placeholderTextColor={isDarkMode ? '#666' : '#999'}
+                value={aadharBox2}
+                onChangeText={handleAadharBox2}
+                keyboardType="numeric"
+                maxLength={4}
+                textAlign="center"
+              />
+              <Text style={[styles.aadharSeparator, isDarkMode && styles.aadharSeparatorDark]}>-</Text>
+              <TextInput
+                style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
+                placeholder="9012"
+                placeholderTextColor={isDarkMode ? '#666' : '#999'}
+                value={aadharBox3}
+                onChangeText={handleAadharBox3}
+                keyboardType="numeric"
+                maxLength={4}
+                textAlign="center"
+              />
+            </View>
+            <Text style={[styles.helpText, isDarkMode && styles.helpTextDark]}>
+              Enter 12-digit Aadhar number (4 digits in each box)
+            </Text>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Full Name *
+            </Text>
             <TextInput
-              style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
-              placeholder="1234"
+              style={[styles.textInput, isDarkMode && styles.textInputDark]}
+              placeholder="Enter your full name as per Aadhar card"
               placeholderTextColor={isDarkMode ? '#666' : '#999'}
-              value={aadharBox1}
-              onChangeText={handleAadharBox1}
-              keyboardType="numeric"
-              maxLength={4}
-              textAlign="center"
-            />
-            <Text style={[styles.aadharSeparator, isDarkMode && styles.aadharSeparatorDark]}>-</Text>
-            <TextInput
-              style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
-              placeholder="5678"
-              placeholderTextColor={isDarkMode ? '#666' : '#999'}
-              value={aadharBox2}
-              onChangeText={handleAadharBox2}
-              keyboardType="numeric"
-              maxLength={4}
-              textAlign="center"
-            />
-            <Text style={[styles.aadharSeparator, isDarkMode && styles.aadharSeparatorDark]}>-</Text>
-            <TextInput
-              style={[styles.aadharBox, isDarkMode && styles.aadharBoxDark]}
-              placeholder="9012"
-              placeholderTextColor={isDarkMode ? '#666' : '#999'}
-              value={aadharBox3}
-              onChangeText={handleAadharBox3}
-              keyboardType="numeric"
-              maxLength={4}
-              textAlign="center"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
             />
           </View>
-          <Text style={[styles.helpText, isDarkMode && styles.helpTextDark]}>
-            Enter 12-digit Aadhar number (4 digits in each box)
-          </Text>
-        </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Full Name *
-          </Text>
-          <TextInput
-            style={[styles.textInput, isDarkMode && styles.textInputDark]}
-            placeholder="Enter your full name as per Aadhar card"
-            placeholderTextColor={isDarkMode ? '#666' : '#999'}
-            value={fullName}
-            onChangeText={setFullName}
-            autoCapitalize="words"
-          />
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Father's Name *
+            </Text>
+            <TextInput
+              style={[styles.textInput, isDarkMode && styles.textInputDark]}
+              placeholder="Enter your father's name"
+              placeholderTextColor={isDarkMode ? '#666' : '#999'}
+              value={fatherName}
+              onChangeText={setFatherName}
+              autoCapitalize="words"
+            />
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Father's Name *
-          </Text>
-          <TextInput
-            style={[styles.textInput, isDarkMode && styles.textInputDark]}
-            placeholder="Enter your father's name"
-            placeholderTextColor={isDarkMode ? '#666' : '#999'}
-            value={fatherName}
-            onChangeText={setFatherName}
-            autoCapitalize="words"
-          />
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Mother's Name *
+            </Text>
+            <TextInput
+              style={[styles.textInput, isDarkMode && styles.textInputDark]}
+              placeholder="Enter your mother's name"
+              placeholderTextColor={isDarkMode ? '#666' : '#999'}
+              value={motherName}
+              onChangeText={setMotherName}
+              autoCapitalize="words"
+            />
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Mother's Name *
-          </Text>
-          <TextInput
-            style={[styles.textInput, isDarkMode && styles.textInputDark]}
-            placeholder="Enter your mother's name"
-            placeholderTextColor={isDarkMode ? '#666' : '#999'}
-            value={motherName}
-            onChangeText={setMotherName}
-            autoCapitalize="words"
-          />
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Date of Birth *
+            </Text>
+            <TextInput
+              style={[styles.textInput, isDarkMode && styles.textInputDark]}
+              placeholder="DD/MM/YYYY"
+              placeholderTextColor={isDarkMode ? '#666' : '#999'}
+              value={dateOfBirth}
+              onChangeText={formatDateOfBirth}
+              keyboardType="numeric"
+              maxLength={10}
+            />
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Date of Birth *
-          </Text>
-          <TextInput
-            style={[styles.textInput, isDarkMode && styles.textInputDark]}
-            placeholder="DD/MM/YYYY"
-            placeholderTextColor={isDarkMode ? '#666' : '#999'}
-            value={dateOfBirth}
-            onChangeText={formatDateOfBirth}
-            keyboardType="numeric"
-            maxLength={10}
-          />
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
+              Address *
+            </Text>
+            <TextInput
+              style={[styles.textInput, styles.addressInput, isDarkMode && styles.textInputDark]}
+              placeholder="Enter your complete address as per Aadhar card"
+              placeholderTextColor={isDarkMode ? '#666' : '#999'}
+              value={address}
+              onChangeText={setAddress}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, isDarkMode && styles.inputLabelDark]}>
-            Address *
-          </Text>
-          <TextInput
-            style={[styles.textInput, styles.addressInput, isDarkMode && styles.textInputDark]}
-            placeholder="Enter your complete address as per Aadhar card"
-            placeholderTextColor={isDarkMode ? '#666' : '#999'}
-            value={address}
-            onChangeText={setAddress}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-        </View>
+          <TouchableOpacity
+            style={[styles.submitButton, isValidating && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isValidating}
+          >
+            <Text style={styles.submitButtonText}>
+              {isValidating ? 'Verifying...' : 'Verify Aadhar Card'}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.submitButton, isValidating && styles.submitButtonDisabled]} 
-          onPress={handleSubmit}
-          disabled={isValidating}
-        >
-          <Text style={styles.submitButtonText}>
-            {isValidating ? 'Verifying...' : 'Verify Aadhar Card'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={[styles.infoBox, isDarkMode && styles.infoBoxDark]}>
-          <Text style={[styles.infoText, isDarkMode && styles.infoTextDark]}>
-            🔒 Your Aadhar card details are secure and will be used only for verification purposes. We follow UIDAI guidelines for data protection.
-          </Text>
-        </View>
+          <View style={[styles.infoBox, isDarkMode && styles.infoBoxDark]}>
+            <Text style={[styles.infoText, isDarkMode && styles.infoTextDark]}>
+              🔒 Your Aadhar card details are secure and will be used only for verification purposes. We follow UIDAI guidelines for data protection.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>

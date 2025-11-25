@@ -12,18 +12,26 @@ import {
 const KYCVerification = ({ onKYCComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
   const handleComplete = async () => {
     try {
-      if (authToken && baseUrl) {
-        await fetch(`${baseUrl}/verification/kyc/complete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-        });
+      if (!authToken || !baseUrl) {
+        Alert.alert('Error', 'Authentication error. Please login again.');
+        return;
       }
+
+      const res = await fetch(`${baseUrl}/verification/kyc/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.message || 'Failed to complete KYC');
+      }
+
       Alert.alert('Success', 'KYC check-in recorded.', [
         { text: 'Continue', onPress: () => onKYCComplete && onKYCComplete() }
       ]);
-    } catch (_) {
-      Alert.alert('Notice', 'Could not reach server, proceeding locally.');
-      onKYCComplete && onKYCComplete();
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not reach server.');
     }
   };
 

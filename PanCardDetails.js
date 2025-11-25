@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  TextInput, 
-  Alert 
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  Alert
 } from 'react-native';
 
 
@@ -37,19 +37,23 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode, baseUrl, 
     setIsValidating(true);
 
     try {
-      if (authToken && baseUrl) {
-        const res = await fetch(`${baseUrl}/verification/pan`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ number: panNumber, name: fullName, dob: dateOfBirth }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Failed to save PAN');
-        if (data?.pan?.name && setDisplayName) setDisplayName(data.pan.name);
+      if (!authToken || !baseUrl) {
+        Alert.alert('Error', 'Authentication error. Please login again.');
+        return;
       }
+
+      const res = await fetch(`${baseUrl}/verification/pan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ number: panNumber, name: fullName, dob: dateOfBirth }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to save PAN');
+      if (data?.pan?.name && setDisplayName) setDisplayName(data.pan.name);
+
       Alert.alert('Success', 'PAN card details saved!', [
         { text: 'Continue', onPress: () => onPanComplete() }
       ]);
@@ -68,10 +72,10 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode, baseUrl, 
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      
+
       <View style={styles.header}>
-        <Image 
-          source={require('./assets/icon.png')} 
+        <Image
+          source={require('./assets/icon.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -145,8 +149,8 @@ const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode, baseUrl, 
           />
         </View>
 
-        <TouchableOpacity 
-          style={[styles.submitButton, isValidating && styles.submitButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.submitButton, isValidating && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={isValidating}
         >

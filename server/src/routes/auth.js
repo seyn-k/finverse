@@ -46,9 +46,14 @@ router.post("/register", async (req, res, next) => {
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ email, passwordHash });
+    const token = jwt.sign(
+      { sub: user.id, email: user.email },
+      process.env.JWT_SECRET || "dev-secret",
+      { expiresIn: "7d" }
+    );
     return res
       .status(201)
-      .json({ message: "registered", user: { id: user.id, email, verificationStep: user.verificationStep } });
+      .json({ message: "registered", token, user: { id: user.id, email, verificationStep: user.verificationStep } });
   } catch (err) {
     next(err);
   }
