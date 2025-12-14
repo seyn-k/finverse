@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -374,6 +375,8 @@ const StockDetailsScreen = ({ route, navigation }) => {
   const [price, setPrice] = useState('');
   const [activeInput, setActiveInput] = useState('quantity');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [password, setPassword] = useState('');
 
   const formatMarketCap = (value) => {
     if (!value) return '$0';
@@ -502,6 +505,15 @@ const StockDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  /* 
+   * NEW: Mock data for cards
+   */
+  const savedCards = [
+    { id: '1', bank: 'HDFC Bank', number: '**** 8845', type: 'Debit' },
+    { id: '2', bank: 'SBI Bank', number: '**** 6932', type: 'Debit' },
+    { id: '3', bank: 'ICICI Bank', number: '**** 4421', type: 'Credit' },
+  ];
+
   const renderPaymentView = () => {
     return (
       <SafeAreaView style={stockStyles.paymentContainer}>
@@ -513,30 +525,191 @@ const StockDetailsScreen = ({ route, navigation }) => {
           <Text style={stockStyles.paymentSubtitle}>Payment method</Text>
         </View>
 
-        <View style={stockStyles.paymentMethodList}>
-          {['UPI', 'Netbanking', 'Debit Card'].map((method) => (
-            <TouchableOpacity key={method} style={stockStyles.paymentMethodItem} onPress={() => setPaymentMethod(method)}>
-              <Text style={stockStyles.paymentMethodText}>{method}</Text>
-              <View style={[stockStyles.radioButton, paymentMethod === method && stockStyles.radioButtonSelected]}>
-                {paymentMethod === method && <View style={stockStyles.radioButtonInner} />}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={stockStyles.paymentMethodList}>
+            {['UPI', 'Netbanking', 'Debit Card', 'Credit Card'].map((method) => (
+              <TouchableOpacity key={method} style={stockStyles.paymentMethodItem} onPress={() => {
+                setPaymentMethod(method);
+                // Reset selected card if switching away from card methods, or keep it?
+                // For now, let's just switch the method logic.
+              }}>
+                <Text style={stockStyles.paymentMethodText}>{method}</Text>
+                <View style={[stockStyles.radioButton, paymentMethod === method && stockStyles.radioButtonSelected]}>
+                  {paymentMethod === method && <View style={stockStyles.radioButtonInner} />}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <View style={{ flex: 1 }} />
+          {/* Card Selection Section */}
+          {(paymentMethod === 'Debit Card' || paymentMethod === 'Credit Card') && (
+            <View style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>Select Card</Text>
+              {savedCards.map((card) => (
+                <TouchableOpacity
+                  key={card.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: selectedCard === card.id ? '#3b82f6' : '#e5e7eb',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    backgroundColor: selectedCard === card.id ? '#eff6ff' : '#fff',
+                  }}
+                  onPress={() => setSelectedCard(card.id)}
+                >
+                  <MaterialIcons name="credit-card" size={24} color="#555" style={{ marginRight: 12 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600' }}>{card.bank}</Text>
+                    <Text style={{ fontSize: 12, color: '#666' }}>{card.number}</Text>
+                  </View>
+                  {selectedCard === card.id && (
+                    <MaterialIcons name="check-circle" size={20} color="#3b82f6" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Password Section */}
+          <View style={{ padding: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>Enter Password</Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#e5e7eb',
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              backgroundColor: '#f9fafb'
+            }}>
+              <MaterialIcons name="lock" size={20} color="#9ca3af" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, paddingVertical: 12, fontSize: 16 }}
+                placeholder="Password"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+          </View>
+
+        </ScrollView>
 
         <View style={stockStyles.payButtonContainer}>
           <TouchableOpacity
-            style={stockStyles.payButton}
+            style={[
+              stockStyles.payButton,
+              // Disable if password empty or (if card method) no card selected
+              (!password || ((paymentMethod === 'Debit Card' || paymentMethod === 'Credit Card') && !selectedCard)) && { backgroundColor: '#9ca3af' }
+            ]}
+            disabled={!password || ((paymentMethod === 'Debit Card' || paymentMethod === 'Credit Card') && !selectedCard)}
             onPress={() => {
-              // Simulate payment success
-              navigation.goBack();
+              if (password && ((paymentMethod !== 'Debit Card' && paymentMethod !== 'Credit Card') || selectedCard)) {
+                // Simulate payment success
+                setViewMode('success');
+              }
             }}
           >
             <Text style={stockStyles.payButtonText}>Pay $550</Text>
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
+    );
+  };
+
+  const renderSuccessView = () => {
+    return (
+      <SafeAreaView style={[stockStyles.stockContainer, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <MaterialIcons name="check-circle" size={80} color="#10b981" />
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111', marginTop: 16, textAlign: 'center' }}>
+            Order Placed Successfully!
+          </Text>
+          <Text style={{ fontSize: 16, color: '#6b7280', marginTop: 8, textAlign: 'center' }}>
+            You have purchased {quantity || '0'} shares of {stock?.symbol || 'N/A'}.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[stockStyles.payButton, { width: '100%' }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={stockStyles.payButtonText}>Done</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{ marginTop: 16, padding: 8 }}
+          onPress={() => setViewMode('email')}
+        >
+          <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '500' }}>View Confirmation Email</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  };
+
+  const renderEmailView = () => {
+    return (
+      <SafeAreaView style={stockStyles.stockContainer}>
+        <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => setViewMode('success')} style={{ marginRight: 16 }}>
+            <MaterialIcons name="arrow-back" size={24} color="#111" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Message</Text>
+        </View>
+        <ScrollView style={{ padding: 16 }}>
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 8, color: '#111' }}>Order Confirmation: {stock?.symbol}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#3b82f6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>F</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111' }}>Finverse</Text>
+                <Text style={{ fontSize: 14, color: '#666' }}>noreply@finverse.com</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 14, color: '#666', marginTop: 4 }}>To: me</Text>
+          </View>
+
+          <View style={{ borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 24 }}>
+            <Text style={{ fontSize: 16, color: '#333', lineHeight: 24, marginBottom: 16 }}>
+              Dear User,
+            </Text>
+            <Text style={{ fontSize: 16, color: '#333', lineHeight: 24, marginBottom: 16 }}>
+              Thank you for your order. We are pleased to confirm that your purchase of <Text style={{ fontWeight: 'bold' }}>{quantity} shares</Text> of <Text style={{ fontWeight: 'bold' }}>{stock?.name || stock?.symbol}</Text> has been successfully processed.
+            </Text>
+
+            <View style={{ backgroundColor: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Order Details:</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontWeight: '600' }}>Stock:</Text>
+                <Text>{stock?.symbol}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontWeight: '600' }}>Quantity:</Text>
+                <Text>{quantity}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontWeight: '600' }}>Price:</Text>
+                <Text>{stock?.price ? formatPrice(stock?.price) : '$0.00'}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#e5e7eb' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Total:</Text>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{stock?.price ? formatPrice(stock.price * (parseInt(quantity) || 0)) : '$0.00'}</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 16, color: '#333', lineHeight: 24 }}>
+              Your portfolio has been updated accordingly.
+            </Text>
+            <Text style={{ fontSize: 16, color: '#333', lineHeight: 24, marginTop: 24 }}>
+              Best regards,{'\n'}The Finverse Team
+            </Text>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   };
@@ -547,6 +720,14 @@ const StockDetailsScreen = ({ route, navigation }) => {
 
   if (viewMode === 'payment') {
     return renderPaymentView();
+  }
+
+  if (viewMode === 'success') {
+    return renderSuccessView();
+  }
+
+  if (viewMode === 'email') {
+    return renderEmailView();
   }
 
   // Default Details View
