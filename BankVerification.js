@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Alert
 } from 'react-native';
+import { useScreenPrivacy } from './useScreenPrivacy';
 
 
 const BankVerification = ({ onBankComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
+  useScreenPrivacy();
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
 

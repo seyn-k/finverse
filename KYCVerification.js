@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Alert
 } from 'react-native';
+import { useScreenPrivacy } from './useScreenPrivacy';
 
 
 const KYCVerification = ({ onKYCComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
+  useScreenPrivacy();
   const handleComplete = async () => {
     try {
       if (!authToken || !baseUrl) {

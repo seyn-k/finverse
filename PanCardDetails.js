@@ -8,9 +8,11 @@ import {
   TextInput,
   Alert
 } from 'react-native';
+import { useScreenPrivacy } from './useScreenPrivacy';
 
 
 const PanCardDetails = ({ onPanComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken, setDisplayName }) => {
+  useScreenPrivacy();
   const [panNumber, setPanNumber] = useState('');
   const [fullName, setFullName] = useState('');
   const [fatherName, setFatherName] = useState('');

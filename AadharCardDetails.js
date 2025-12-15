@@ -9,9 +9,11 @@ import {
   Alert,
   ScrollView
 } from 'react-native';
+import { useScreenPrivacy } from './useScreenPrivacy';
 
 
 const AadharCardDetails = ({ onAadharComplete, isDarkMode, onToggleDarkMode, baseUrl, authToken }) => {
+  useScreenPrivacy();
   const [aadharBox1, setAadharBox1] = useState('');
   const [aadharBox2, setAadharBox2] = useState('');
   const [aadharBox3, setAadharBox3] = useState('');

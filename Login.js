@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  TextInput, 
-  Alert, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  Alert,
   Platform
 } from 'react-native';
 import Constants from 'expo-constants';
+import { useScreenPrivacy } from './useScreenPrivacy';
 
 const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMode }) => {
+  useScreenPrivacy();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -83,8 +85,8 @@ const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMo
   return (
     <View style={[styles.loginContainer, isDarkMode && styles.loginContainerDark]}>
       <View style={styles.loginHeader}>
-        <Image 
-          source={require('./assets/icon.png')} 
+        <Image
+          source={require('./assets/icon.png')}
           style={styles.loginLogo}
           resizeMode="contain"
         />
@@ -136,8 +138,8 @@ const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMo
           </View>
         )}
 
-        <TouchableOpacity 
-          style={styles.loginButton} 
+        <TouchableOpacity
+          style={styles.loginButton}
           onPress={isSignUp ? handleSignUp : handleLogin}
         >
           <Text style={styles.loginButtonText}>
@@ -145,8 +147,8 @@ const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMo
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.switchButton} 
+        <TouchableOpacity
+          style={styles.switchButton}
           onPress={() => setIsSignUp(!isSignUp)}
         >
           <Text style={styles.switchButtonText}>

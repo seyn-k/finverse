@@ -70,7 +70,7 @@ router.post("/pan", async (req, res, next) => {
     const { number, name, dob } = req.body || {};
     logDebug(req.userId, "pan", { number, name, dob });
     if (!number) return res.status(400).json({ message: "PAN number is required" });
-    
+
     // Check if PAN verification is already completed
     const existingUser = await User.findById(req.userId).select("pan");
     if (existingUser.pan.verified) {
@@ -107,7 +107,7 @@ router.post("/aadhar", async (req, res, next) => {
     const { number, name, dob } = req.body || {};
     logDebug(req.userId, "aadhar", { number, name, dob });
     if (!number) return res.status(400).json({ message: "Aadhaar number is required" });
-    
+
     // Check if Aadhaar verification is already completed
     const existingUser = await User.findById(req.userId).select("aadhar pan");
     if (existingUser.aadhar.verified) {
@@ -148,7 +148,7 @@ router.post("/bank", async (req, res, next) => {
     const { accountNumber, ifsc, holderName } = req.body || {};
     logDebug(req.userId, "bank", { accountNumber, ifsc, holderName });
     if (!accountNumber || !ifsc) return res.status(400).json({ message: "accountNumber and ifsc are required" });
-    
+
     // Check if Bank verification is already completed
     const existingUser = await User.findById(req.userId).select("bank aadhar");
     if (existingUser.bank.verified) {
