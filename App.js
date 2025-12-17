@@ -18,6 +18,7 @@ import ChatBot from './ChatBot.js';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useScreenPrivacy } from './useScreenPrivacy';
+import { API_URL } from './src/config';
 
 // Loading Screen Component
 const LoadingScreen = ({ onLoadingComplete, isDarkMode }) => {
@@ -1920,15 +1921,7 @@ export default function App() {
     restoreSession();
   }, []);
 
-  const resolvedHost = (
-    (Constants?.expoConfig?.hostUri || Constants?.manifest?.debuggerHost || '')
-      .toString()
-      .split(':')[0]
-  );
-  const isLocalHost = resolvedHost === 'localhost' || resolvedHost === '127.0.0.1';
-  const BASE_URL = Platform.OS === 'android'
-    ? (!isLocalHost && resolvedHost ? `http://${resolvedHost}:4000` : 'http://10.0.2.2:4000')
-    : (resolvedHost ? `http://${resolvedHost}:4000` : 'http://localhost:4000');
+  const BASE_URL = API_URL;
 
   const advanceStep = async (toStep) => {
     if (!authToken) return;

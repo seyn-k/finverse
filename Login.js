@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Constants from 'expo-constants';
 import { useScreenPrivacy } from './useScreenPrivacy';
+import { API_URL } from './src/config';
 
 const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMode }) => {
   useScreenPrivacy();
@@ -19,16 +20,7 @@ const LoginPage = ({ onLoginSuccess, onSignupSuccess, isDarkMode, onToggleDarkMo
   const [isSignUp, setIsSignUp] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Resolve base URL depending on simulator/emulator/real device
-  const resolvedHost = (
-    (Constants?.expoConfig?.hostUri || Constants?.manifest?.debuggerHost || '')
-      .toString()
-      .split(':')[0]
-  );
-  const isLocalHost = resolvedHost === 'localhost' || resolvedHost === '127.0.0.1';
-  const BASE_URL = Platform.OS === 'android'
-    ? (!isLocalHost && resolvedHost ? `http://${resolvedHost}:4000` : 'http://10.0.2.2:4000')
-    : (resolvedHost ? `http://${resolvedHost}:4000` : 'http://localhost:4000');
+  const BASE_URL = API_URL;
 
   const handleLogin = async () => {
     if (!email || !password) {
